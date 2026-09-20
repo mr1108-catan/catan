@@ -32,13 +32,15 @@ canvas{display:block;position:relative;z-index:1}
 /* Player card panel — absolute overlay on left */
 #mid-left{position:absolute;left:5px;top:5px;bottom:5px;width:248px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;z-index:10;background:rgba(4,12,24,.82);border-radius:10px;padding:5px}
 /* Control panel: dice + status + buttons — absolute overlay right-of-center */
-#ctrl-panel{position:absolute;top:5px;bottom:5px;right:175px;width:165px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;z-index:10;background:rgba(4,15,28,.92);border-radius:10px;padding:8px 7px;border:1px solid rgba(255,255,255,.1)}
+#ctrl-panel{position:absolute;top:5px;bottom:5px;right:212px;width:172px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;z-index:10;background:rgba(4,15,28,.92);border-radius:10px;padding:8px 7px;border:1px solid rgba(255,255,255,.1)}
 #dice-box{font-size:38px;text-align:center;background:#091a2e;border-radius:10px;padding:6px 4px;border:2px solid #1a3a5c;letter-spacing:2px;line-height:1.2;cursor:default;flex-shrink:0}
 #status{font-size:12px;color:#c8dff0;background:#091a2e;padding:7px 8px;border-radius:7px;border:1px solid #1a3a5c;line-height:1.5;flex-shrink:0}
 #act-btns{display:flex;flex-direction:column;gap:5px}
-#act-btns button{width:100%;text-align:left;padding:7px 10px}
+#act-btns button{width:100%;text-align:left;padding:11px 10px;font-size:13.5px}
+/* サイコロを振るボタンは押しやすいよう大きめに */
+.btn-roll{padding:20px 10px!important;font-size:17px!important;font-weight:800;text-align:center!important;letter-spacing:1px}
 /* Info panel: bank, awards, log — absolute overlay rightmost */
-#mid-right{position:absolute;top:5px;bottom:5px;right:5px;width:165px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;z-index:10}
+#mid-right{position:absolute;top:5px;bottom:5px;right:5px;width:200px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;z-index:10}
 .side-sec{background:rgba(4,15,28,.92);border-radius:8px;padding:6px 8px;border:1px solid rgba(255,255,255,.1)}
 #rp-players{display:none}
 /* player card list */
@@ -78,6 +80,24 @@ canvas{display:block;position:relative;z-index:1}
 /* Modals */
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(3px)}
 .ov.hidden{display:none}
+/* 交渉・取引は盤面を隠さないよう右側のドロワーで表示する */
+.ov.side{background:transparent;backdrop-filter:none;justify-content:flex-end;align-items:stretch;pointer-events:none}
+.ov.side>.modal{pointer-events:auto;width:min(96vw,430px);max-width:none!important;height:100%;max-height:none!important;
+  border-radius:14px 0 0 14px;border-right:none;overflow-y:auto!important;box-shadow:-10px 0 40px rgba(0,0,0,.7)}
+.ov.side .trade-row .tres{height:42px;font-size:16px;width:74px}
+.ov.side input[type=number]::-webkit-outer-spin-button,
+.ov.side input[type=number]::-webkit-inner-spin-button{height:42px;width:26px}
+.ov.side .trade-label{width:68px;font-size:12px}
+.ov.side .two-col{flex-wrap:wrap!important}
+.ov.side .two-col>div{flex:1 1 100%!important}
+/* 手番順ストリップ */
+/* 手番順は必ず1行に収める（幅が足りなければ横スクロール）*/
+.turn-strip{display:flex;flex-wrap:nowrap;gap:3px;margin-bottom:8px;padding:6px 8px;background:#071525;border-radius:8px;border:1px solid #1a3a5c;
+  overflow-x:auto;overflow-y:hidden;white-space:nowrap;align-items:center}
+.turn-strip::-webkit-scrollbar{height:4px}
+.turn-chip{display:inline-flex;align-items:center;gap:2px;font-size:10.5px;padding:2px 5px;border-radius:5px;background:#0d2035;border:1px solid transparent;white-space:nowrap;flex:0 0 auto}
+.turn-chip.now{border-color:#f4a460;background:rgba(244,164,96,.16);font-weight:700}
+.turn-chip .tc-n{color:#6a8aa0;font-size:10px}
 .modal{background:#0c1e32;border:2px solid #2e5a80;border-radius:12px;padding:22px;max-width:500px;width:92%;max-height:85vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.6)}
 .modal h3{color:#f4a460;margin-bottom:14px;font-size:17px}
 .modal-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
@@ -120,6 +140,40 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 #dice-announce.in{animation:dicePopIn .28s ease-out forwards}
 #dice-announce.out{animation:diceFadeOut .4s ease-in forwards}
 
+/* Build cost table — プレイヤーカードと盤面の間 */
+#cost-panel{position:absolute;left:258px;top:5px;width:152px;z-index:9;display:none;flex-direction:column;gap:4px;
+  background:rgba(4,15,28,.92);border-radius:10px;padding:7px 8px;border:1px solid rgba(255,255,255,.1);max-height:calc(100% - 10px);overflow-y:auto}
+#cost-panel.on{display:flex}
+.cost-row{display:flex;flex-direction:column;gap:1px;padding:4px 0;border-bottom:1px solid #0d2035}
+.cost-row:last-child{border-bottom:none}
+.cost-name{font-size:12px;color:#c8dff0;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:4px}
+.cost-ico{font-size:15px;letter-spacing:1px}
+.cost-vp{font-size:10px;color:#f4d060;font-weight:700}
+
+/* Dice roll effect — 画面中央でサイコロを転がす */
+#dice-fx{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9996;display:flex;flex-direction:column;align-items:center;gap:6px;
+  background:rgba(4,16,36,.95);border:3px solid #f4a460;border-radius:24px;padding:26px 46px;pointer-events:none;
+  box-shadow:0 0 70px rgba(244,164,96,.4),0 12px 50px rgba(0,0,0,.8);animation:dfxIn .25s ease-out}
+#dice-fx.out{animation:dfxOut .4s ease-in forwards}
+/* 目が確定したら、枠と背面だけ先に消して盤面を見せる */
+#dice-fx{transition:background .5s ease,border-color .5s ease,box-shadow .5s ease}
+#dice-fx.frameout{background:transparent;border-color:transparent;box-shadow:none}
+#dice-fx.frameout .dfx-dice,#dice-fx.frameout .dfx-result{
+  text-shadow:0 2px 12px rgba(0,0,0,.95),0 0 22px rgba(0,0,0,.85),0 0 4px rgba(0,0,0,.9)}
+#dice-fx .dfx-dice{display:flex;gap:16px;font-size:82px;line-height:1}
+#dice-fx .dfx-dice span{display:inline-block;animation:dfxTumble .28s linear infinite}
+#dice-fx .dfx-dice span:last-child{animation-direction:reverse;animation-duration:.22s}
+#dice-fx.settled .dfx-dice span{animation:dfxLand .3s ease-out forwards}
+#dice-fx .dfx-result{text-align:center;min-height:4px}
+@keyframes dfxTumble{0%{transform:rotate(-16deg) translateY(0) scale(1)}25%{transform:rotate(8deg) translateY(-14px) scale(1.06)}50%{transform:rotate(22deg) translateY(0) scale(1)}75%{transform:rotate(-6deg) translateY(-9px) scale(1.04)}100%{transform:rotate(-16deg) translateY(0) scale(1)}}
+@keyframes dfxLand{0%{transform:scale(1.3) rotate(6deg)}60%{transform:scale(.94) rotate(0)}100%{transform:scale(1) rotate(0)}}
+@keyframes dfxIn{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes dfxOut{to{opacity:0;transform:translate(-50%,-50%) scale(.85)}}
+@media (prefers-reduced-motion:reduce){
+  #dice-fx .dfx-dice span{animation:none}
+  #dice-fx{animation:none}
+}
+
 /* Burst blink (7 rolled discard) */
 @keyframes burstBlink{0%,100%{background:#3a0808;box-shadow:0 0 14px rgba(255,60,60,.9)}50%{background:#0d1f36;box-shadow:none}}
 .pc.burst{animation:burstBlink .45s ease-in-out 6;border-left-color:#ff4444!important}
@@ -153,6 +207,8 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 <div id="wrap">
   <div id="mid">
     <div id="mid-left"></div>
+    <!-- 建設コスト表（プレイヤーカードと盤面の間）-->
+    <div id="cost-panel"><div id="cost-body"></div></div>
     <canvas id="board"></canvas>
     <!-- コントロールパネル（ダイス・ステータス・ボタン）-->
     <div id="ctrl-panel">
@@ -227,6 +283,20 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
           <select id="net-bank-view" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px">
             <option value="gauge" selected>📊 ゲージ（枚数を隠す）</option><option value="num">🔢 正確な枚数</option>
           </select>
+          <label style="color:#f4a460">🃏 相手の資源:</label>
+          <select id="net-openhands" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px">
+            <option value="off" selected>🔒 非公開</option><option value="on">🔓 公開</option>
+          </select>
+          <label style="color:#f4a460">🏆 勝利点:</label>
+          <select id="net-vpwin" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px"></select>
+          <label style="color:#f4a460">📣 勝利宣言:</label>
+          <select id="net-declare" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px">
+            <option value="on" selected>あり</option><option value="off">なし（自動）</option>
+          </select>
+          <label style="color:#f4a460">🎲 サイコロ演出:</label>
+          <select id="net-dicefx" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px">
+            <option value="on" selected>あり</option><option value="off">なし</option>
+          </select>
         </div>
         <div class="modal-btns"><button class="btn-p" id="net-start-btn" style="font-size:15px;padding:10px 24px" onclick="netStartGame()">🚀 ゲーム開始</button></div>
       </div>
@@ -270,6 +340,31 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
           <option value="num">🔢 正確な枚数</option>
         </select>
       </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label style="color:#f4a460;font-weight:700">🃏 相手の資源:</label>
+        <select id="openhands-sel" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px">
+          <option value="off" selected>🔒 非公開（枚数のみ）</option>
+          <option value="on">🔓 公開（内訳も見える）</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label style="color:#f4a460;font-weight:700">🏆 勝利点:</label>
+        <select id="vpwin-sel" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px"></select>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label style="color:#f4a460;font-weight:700">📣 勝利宣言:</label>
+        <select id="declare-sel" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px">
+          <option value="on" selected>あり（自分で宣言）</option>
+          <option value="off">なし（自動で勝利）</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label style="color:#f4a460;font-weight:700">🎲 サイコロ演出:</label>
+        <select id="dicefx-sel" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px">
+          <option value="on" selected>あり（画面中央で回す）</option>
+          <option value="off">なし（結果のみ）</option>
+        </select>
+      </div>
       <span style="font-size:11px;color:#8aaac0">AIにチェックを入れるとCPUが操作します</span>
     </div>
     <div id="player-setup-rows"></div>
@@ -278,12 +373,12 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 </div>
 
 <!-- Trade Modal -->
-<div class="ov hidden" id="trade-ov">
+<div class="ov side hidden" id="trade-ov">
   <div class="modal" style="max-width:min(96vw,820px);max-height:none;overflow-y:visible">
     <h3>🔄 銀行・港との取引</h3>
     <div id="trade-hand-display" style="margin-bottom:8px;padding:8px 10px;background:#071525;border-radius:8px;border:1px solid #1a3a5c"></div>
     <p style="font-size:12px;color:#8aaac0;margin-bottom:10px">港があれば3:1や2:1で交換できます</p>
-    <div style="display:flex;gap:16px;flex-wrap:nowrap">
+    <div class="two-col" style="display:flex;gap:16px;flex-wrap:nowrap">
       <div style="flex:1;min-width:0"><div class="trade-sect"><div class="trade-sect-h">渡す資源</div><div class="trade-grid" id="trade-give"></div></div></div>
       <div style="flex:1;min-width:0"><div class="trade-sect"><div class="trade-sect-h">受け取る資源</div><div class="trade-grid" id="trade-get"></div></div></div>
     </div>
@@ -333,13 +428,14 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 <div class="ov hidden" id="mono-ov"><div class="modal" id="mono-modal-body"></div></div>
 
 <!-- Player Trade Proposal Modal -->
-<div class="ov hidden" id="ptrade-ov">
+<div class="ov side hidden" id="ptrade-ov">
   <div class="modal" style="max-width:min(96vw,860px);max-height:94vh;overflow:hidden;display:flex;flex-direction:column;padding:18px 22px 0">
     <h3 style="margin-bottom:10px">🤝 プレイヤー間交渉</h3>
     <!-- Scrollable area: player ref + resource inputs -->
     <div style="overflow-y:auto;flex:1;margin:0 -4px;padding:0 4px">
+      <div class="turn-strip" id="ptrade-turn-order"></div>
       <div id="ptrade-player-ref" style="margin-bottom:8px;padding:8px 10px;background:#071525;border-radius:8px;border:1px solid #1a3a5c"></div>
-      <div style="display:flex;gap:16px;flex-wrap:nowrap">
+      <div class="two-col" style="display:flex;gap:16px;flex-wrap:nowrap">
         <div style="flex:1;min-width:0"><div class="trade-sect"><div class="trade-sect-h">📤 あなたが渡す資源</div><div class="trade-grid" id="ptrade-give"></div></div></div>
         <div style="flex:1;min-width:0"><div class="trade-sect"><div class="trade-sect-h">🎁 あなたが受け取る資源</div><div class="trade-grid" id="ptrade-get"></div></div></div>
       </div>
@@ -356,11 +452,12 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 </div>
 
 <!-- Player Trade Unified React Modal -->
-<div class="ov hidden" id="ptrade-react-ov">
+<div class="ov side hidden" id="ptrade-react-ov">
   <div class="modal" style="max-width:min(96vw,720px);max-height:94vh;overflow:hidden;display:flex;flex-direction:column;padding:18px 22px 0">
     <h3 style="margin-bottom:10px">🤝 交渉の提案</h3>
     <!-- Scrollable area: proposal info + AI player rows -->
     <div style="overflow-y:auto;flex:1;min-height:0;margin:0 -4px;padding:0 4px">
+      <div class="turn-strip" id="react-turn-order"></div>
       <div id="ptrade-react-proposal" style="font-size:13px;color:#c8dff0;margin-bottom:6px;background:#071525;padding:10px 14px;border-radius:10px;border:2px solid #2a5a9c"></div>
       <div id="ptrade-my-res" style="display:none;margin:0 0 6px;padding:8px 12px;background:#0a1e30;border-radius:8px;border:1px solid #2a5a9c;font-size:12px;color:#c8dff0"></div>
       <div style="font-size:12px;color:#f4a460;font-weight:700;margin:6px 0 5px">各プレイヤーの反応 (AI):</div>
@@ -379,9 +476,10 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 </div>
 
 <!-- Player Trade Result Modal -->
-<div class="ov hidden" id="ptrade-result-ov">
+<div class="ov side hidden" id="ptrade-result-ov">
   <div class="modal" style="max-width:min(96vw,720px);max-height:94vh;overflow-y:auto">
     <h3>🤝 交渉の反応</h3>
+    <div class="turn-strip" id="result-turn-order"></div>
     <div id="ptrade-result-proposal" style="display:none;font-size:13px;color:#c8dff0;margin-bottom:6px;padding:10px 14px;background:#071525;border-radius:10px;border:2px solid #2a5a9c"></div>
     <div id="ptrade-result-my-res" style="display:none;margin:0 0 8px;padding:8px 12px;background:#0a1e30;border-radius:8px;border:1px solid #2a5a9c;font-size:12px;color:#c8dff0"></div>
     <div id="ptrade-reactions" style="margin:8px 0"></div>
@@ -431,7 +529,16 @@ const DEV_TYPES = {
 };
 const DEV_DECK_BASE = [...Array(20).fill('knight'),...Array(5).fill('vp'),...Array(3).fill('roadBuilding'),...Array(3).fill('yearOfPlenty'),...Array(3).fill('monopoly')];
 const ROW_DEFS = [[3,5,7],[2,4,6,8],[1,3,5,7,9],[0,2,4,6,8,10],[1,3,5,7,9],[2,4,6,8],[3,5,7]];
-const VP_WIN = 10;
+const VP_WIN_DEFAULT = 10;
+// 勝利に必要な点数（開始前に5〜20で設定）
+function vpWin(){const v=G&&G.vpWin;return (v>=5&&v<=20)?v:VP_WIN_DEFAULT;}
+// 勝利点セレクトの選択肢を作る
+function fillVpOptions(id){
+  const el=document.getElementById(id);if(!el)return;
+  let h='';
+  for(let v=5;v<=20;v++)h+=`<option value="${v}"${v===VP_WIN_DEFAULT?' selected':''}>${v}点</option>`;
+  el.innerHTML=h;
+}
 let G_AI_DELAY = 1100;
 function getAIDelay(){return G_AI_DELAY}
 
@@ -606,6 +713,7 @@ function initGame(playerDefs){
     aiActionCount:0,
     nextActiveCur:1,showOppRes:false,highlightTiles:[],
     difficulty:'normal',autoPassSB:'off',bankView:'gauge',
+    vpWin:VP_WIN_DEFAULT,declareWin:'on',diceFx:'on',showCosts:true,openHands:'off',
     _undoSnapshot:null,_tradeOpen:false,diceLog:[],robberBlockedTiles:[],_diceRoller:null,_popupCount:0,_roadBuilderAI:new Set()
   };
   G._defKeys=defKeys;
@@ -870,10 +978,16 @@ function render(){
     const v1=board.vertices[e.v1],v2=board.vertices[e.v2];
     const p=G.players[e.player];
     ctx.save();
-    ctx.shadowColor='rgba(0,0,0,0.5)';ctx.shadowBlur=4;
+    ctx.lineCap='round';
+    // 影 → 黒の縁 → 白枠 → プレイヤー色 の順に重ねて視認性を上げる
+    ctx.shadowColor='rgba(0,0,0,0.55)';ctx.shadowBlur=5;
     ctx.beginPath();ctx.moveTo(v1.x,v1.y);ctx.lineTo(v2.x,v2.y);
-    ctx.strokeStyle=p.color;ctx.lineWidth=7;ctx.lineCap='round';ctx.stroke();
-    ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.lineWidth=2;ctx.stroke();
+    ctx.strokeStyle='rgba(0,0,0,0.55)';ctx.lineWidth=13;ctx.stroke();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle='#fff';ctx.lineWidth=11;ctx.stroke();
+    ctx.strokeStyle=p.color;ctx.lineWidth=7;ctx.stroke();
+    // 上面のハイライト
+    ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=2;ctx.stroke();
     ctx.restore();
   }
 
@@ -881,32 +995,41 @@ function render(){
   for(const v of board.vertices){
     if(!v.building)continue;
     const p=G.players[v.player];
-    ctx.save();ctx.shadowColor='rgba(0,0,0,0.6)';ctx.shadowBlur=6;
-    if(v.building==='settlement'){
-      // House shape (×1.2)
+    ctx.save();
+    ctx.lineJoin='round';
+    // 形を作る → 黒の外周 → 白枠 → プレイヤー色 の順に描いて盤面から浮き上がらせる
+    const shape=()=>{
       ctx.beginPath();
-      ctx.moveTo(v.x,v.y-16);
-      ctx.lineTo(v.x+11,v.y-5);
-      ctx.lineTo(v.x+11,v.y+10);
-      ctx.lineTo(v.x-11,v.y+10);
-      ctx.lineTo(v.x-11,v.y-5);
+      if(v.building==='settlement'){
+        ctx.moveTo(v.x,v.y-17);
+        ctx.lineTo(v.x+12,v.y-5);
+        ctx.lineTo(v.x+12,v.y+11);
+        ctx.lineTo(v.x-12,v.y+11);
+        ctx.lineTo(v.x-12,v.y-5);
+      } else {
+        ctx.moveTo(v.x-15,v.y+12);ctx.lineTo(v.x-15,v.y-2);
+        ctx.lineTo(v.x-6,v.y-15);ctx.lineTo(v.x+3,v.y-2);
+        ctx.lineTo(v.x+3,v.y-9);ctx.lineTo(v.x+15,v.y-9);
+        ctx.lineTo(v.x+15,v.y+12);
+      }
       ctx.closePath();
-      ctx.fillStyle=p.color;ctx.fill();
-      ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    };
+    shape();
+    ctx.shadowColor='rgba(0,0,0,0.75)';ctx.shadowBlur=8;ctx.shadowOffsetY=2;
+    ctx.strokeStyle='rgba(0,0,0,0.85)';ctx.lineWidth=6;ctx.stroke();
+    ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+    ctx.strokeStyle='#fff';ctx.lineWidth=4;ctx.stroke();
+    ctx.fillStyle=p.color;ctx.fill();
+    if(v.building==='settlement'){
       // Door
-      ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(v.x-4,v.y+2,8,8);
+      ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(v.x-4,v.y+3,8,8);
     } else {
-      // City shape (×1.2)
-      ctx.beginPath();
-      ctx.moveTo(v.x-14,v.y+11);ctx.lineTo(v.x-14,v.y-2);
-      ctx.lineTo(v.x-6,v.y-14);ctx.lineTo(v.x+2,v.y-2);
-      ctx.lineTo(v.x+2,v.y-8);ctx.lineTo(v.x+14,v.y-8);
-      ctx.lineTo(v.x+14,v.y+11);ctx.closePath();
-      ctx.fillStyle=p.color;ctx.fill();
-      ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.stroke();
       // Window details
-      ctx.fillStyle='rgba(255,255,200,0.6)';
-      ctx.fillRect(v.x-11,v.y+1,6,6);ctx.fillRect(v.x+5,v.y-5,6,6);
+      ctx.fillStyle='rgba(255,255,210,0.85)';
+      ctx.fillRect(v.x-11,v.y+2,6,6);ctx.fillRect(v.x+5,v.y-5,6,6);
+      // 都市であることが一目で分かるよう冠マークを載せる
+      ctx.fillStyle='#fff8d0';ctx.strokeStyle='rgba(0,0,0,.6)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(v.x-6,v.y-19,2.6,0,Math.PI*2);ctx.fill();ctx.stroke();
     }
     ctx.restore();
   }
@@ -1078,6 +1201,7 @@ function advanceSetup(){
 // ==================== DICE & RESOURCES ====================
 function rollDice(){
   if(G.phase!=='main-roll')return;
+  if(G._rolling)return; // 演出中の二重ロールを防ぐ
   if(G._tradeOpen||isAnyTradeModalOpen())return; // 交渉中は絶対にロール不可
   G._preRollPlay=false;
   const d1=1+(0|Math.random()*6),d2=1+(0|Math.random()*6);
@@ -1086,15 +1210,65 @@ function rollDice(){
   G.diceLog.push({name:G.players[G.cur].name,d1,d2,total});
   document.getElementById('dice-box').textContent=diceFace(d1)+diceFace(d2);
   addLog(`🎲 ${G.players[G.cur].name}: ${d1}+${d2}=${total}`);
-  showDiceAnnounce(d1,d2,total);
-  netFx('dice',{d1,d2,total});
-  if(total===7)handleSeven();
-  else{distributeResources(total);G.phase='main-action';
-    // 特別建設フェーズで購入した発展カードをこのターンから使用可能に
-    G.players[G.cur].devCards.forEach(c=>{c.newThisTurn=false;});
-    setStatus(`${G.players[G.cur].name} — 行動を選択してください`);updateUI();if(isAI(G.cur))setTimeout(runAITurn,getAIDelay());}
+  // 転がる時間は毎回 0.4〜0.9 秒でばらつかせる（演出なしの設定では待たない）
+  const spin=G.diceFx==='off'?0:Math.round(400+Math.random()*500);
+  G._rolling=true;
+  showDiceAnnounce(d1,d2,total,spin);
+  netFx('dice',{d1,d2,total,spin});
+  setStatus(`${G.players[G.cur].name} — サイコロを振っています...`);
+  updateUI();
+  // タイルの反応と資源配布は、サイコロの目が確定してから行う
+  setTimeout(()=>resolveRoll(total),spin);
 }
-function showDiceAnnounce(d1,d2,total){
+function resolveRoll(total){
+  G._rolling=false;
+  if(G.winner!==-1)return;
+  if(G.phase!=='main-roll')return;
+  if(total===7){handleSeven();return;}
+  distributeResources(total);
+  G.phase='main-action';
+  // 特別建設フェーズで購入した発展カードをこのターンから使用可能に
+  G.players[G.cur].devCards.forEach(c=>{c.newThisTurn=false;});
+  setStatus(`${G.players[G.cur].name} — 行動を選択してください`);updateUI();
+  if(isAI(G.cur))setTimeout(runAITurn,getAIDelay());
+}
+// 画面中央でサイコロが転がる演出（設定が「あり」のときだけ）
+function showDiceRollFx(d1,d2,total,spin){
+  document.getElementById('dice-fx')?.remove();
+  const p=G.players[G.cur];
+  const el=document.createElement('div');
+  el.id='dice-fx';
+  el.innerHTML=
+    '<div class="dfx-dice"><span id="dfx-a">⚀</span><span id="dfx-b">⚅</span></div>'+
+    '<div class="dfx-result" id="dfx-res"></div>';
+  document.body.appendChild(el);
+  G._popupCount=(G._popupCount||0)+1;
+  const spinMs=(spin>=200&&spin<=3000)?spin:650;
+  const a=el.querySelector('#dfx-a'),b=el.querySelector('#dfx-b');
+  // 転がっている間はランダムな目をパラパラ表示
+  const tumble=setInterval(()=>{
+    a.textContent=diceFace(1+(0|Math.random()*6));
+    b.textContent=diceFace(1+(0|Math.random()*6));
+  },70);
+  setTimeout(()=>{
+    clearInterval(tumble);
+    a.textContent=diceFace(d1);b.textContent=diceFace(d2);
+    el.classList.add('settled');
+    const sub=total===7
+      ?'<div style="font-size:19px;color:#ff8888;font-weight:800;margin-top:4px">🏴 山賊発動！</div>'
+      :`<div style="font-size:19px;color:${p.color};font-weight:800;margin-top:4px;text-shadow:0 0 12px ${p.color}99">${p.name}</div>`;
+    el.querySelector('#dfx-res').innerHTML=
+      `<div style="font-size:52px;font-weight:900;color:#f4a460;line-height:1">${total}</div>`+sub;
+    // 目が確定した直後に枠・背面だけ先行して消す（数字とサイコロは残る）
+    setTimeout(()=>el.classList.add('frameout'),120);
+  },spinMs);
+  setTimeout(()=>{
+    el.classList.add('out');
+    setTimeout(()=>{el.remove();G._popupCount=Math.max(0,(G._popupCount||1)-1);},400);
+  },spinMs+1700);
+}
+function showDiceAnnounce(d1,d2,total,spin){
+  if(G.diceFx!=='off'){showDiceRollFx(d1,d2,total,spin);return;}
   document.getElementById('dice-announce')?.remove();
   const el=document.createElement('div');
   el.id='dice-announce';el.className='in';
@@ -1363,7 +1537,7 @@ function showStealNotice(thief,victim,res){
   const glowColor=iMySteal?'rgba(50,255,100,.5)':'rgba(255,50,50,.6)';
   const headline=iMySteal?'奪いました！':'盗まれた！';
   const headlineColor=iMySteal?'#88ffaa':'#ff8888';
-  el.style.cssText=`position:fixed;top:50%;right:185px;transform:translateY(-50%);z-index:9990;text-align:center;`+
+  el.style.cssText=`position:fixed;top:50%;right:225px;transform:translateY(-50%);z-index:9990;text-align:center;`+
     `background:${bgColor};border:3px solid ${borderColor};border-radius:20px;padding:16px 28px;`+
     `pointer-events:none;box-shadow:0 0 50px ${glowColor},0 8px 30px rgba(0,0,0,.7);min-width:160px`;
   el.innerHTML=
@@ -1958,9 +2132,10 @@ function renderWinBanner(p){
 function checkVictory(){
   // Only check the current active player (VP can only be gained on your own turn)
   const p=G.players[G.cur];
-  if(p.vp+p.vpCards>=VP_WIN){
-    if(p.isAI){_doVictory(p);}
-    // Human: victory declaration button appears in updateActionButtons
+  if(p.vp+p.vpCards>=vpWin()){
+    // AI、または「勝利宣言なし」設定のときは即座に勝利が確定する
+    if(p.isAI||G.declareWin==='off'){_doVictory(p);}
+    // 人間＋宣言あり: updateActionButtons に勝利宣言ボタンが出る
     else{updateActionButtons();}
   }
 }
@@ -1968,7 +2143,7 @@ function declareVictory(){
   const p=G.players[G.cur];
   // Guard: only allowed during own main turn (never during special-build)
   if(p.isAI||G.phase==='special-build')return;
-  if((G.phase==='main-roll'||G.phase==='main-action')&&p.vp+p.vpCards>=VP_WIN)_doVictory(p);
+  if((G.phase==='main-roll'||G.phase==='main-action')&&p.vp+p.vpCards>=vpWin())_doVictory(p);
 }
 
 // ==================== TURN END ====================
@@ -2078,25 +2253,10 @@ function showPlayerTradeModal(){
     r2.innerHTML=`<span class="trade-label">${RES_EMOJI[r]} ${RES_JP[r]}</span><span class="trade-ratio">　</span><input type="number" id="ptw-${r}" class="tres" min="0" max="10" value="0">`;
     wDiv.appendChild(r2);
   }
-  // Show all other players' resource counts for reference
-  const otherPlayers=G.players.filter(op=>op.id!==G.cur);
+  // 相手の資源状況の一覧は表示しない（手番順のみ参考として出す）
   const refDiv=document.getElementById('ptrade-player-ref');
-  if(refDiv){
-    refDiv.innerHTML='<div style="font-size:12px;color:#f4a460;font-weight:700;margin-bottom:6px">👥 相手の資源状況</div>'+
-      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">'+
-      otherPlayers.map(op=>{
-        const vp=op.vp+op.vpCards;
-        const resStr=(!NET.on&&(G.showOppRes||!op.isAI))
-          ?RES.filter(r=>op.resources[r]>0).map(r=>`${RES_EMOJI[r]}${op.resources[r]}`).join(' ')||'なし'
-          :`🃏${sum(op.resources)}枚`;
-        return `<div style="padding:6px 8px;background:#0a1e30;border-radius:6px;border:1px solid #1a3a5c">`+
-          `<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">`+
-          `<span style="color:${op.color};font-weight:700;font-size:14px">${op.isAI?'🤖':'👤'} ${op.name}</span>`+
-          `<span style="color:#f4d060;font-size:12px;font-weight:700">⭐${vp}</span></div>`+
-          `<div style="font-size:14px;color:#aaccdd">${resStr}</div>`+
-          `</div>`;
-      }).join('')+'</div>';
-  }
+  if(refDiv){refDiv.style.display='none';refDiv.innerHTML='';}
+  renderTurnOrder('ptrade-turn-order');
   openTradeFlag();
   startTradeTimer(90,closePtradeProposal);
   document.getElementById('ptrade-ov').classList.remove('hidden');
@@ -2204,6 +2364,7 @@ function showUnifiedReactModal(){
   }
   if(G._pendingHumanReacts.size===0){showTradeReactionResults();}
   else{
+    renderTurnOrder('react-turn-order');
     openTradeFlag();
     startTradeTimer(60,skipAllAndShowResults);
     document.getElementById('ptrade-react-ov').classList.remove('hidden');
@@ -2333,6 +2494,7 @@ function showTradeReactionResults(){
     cancelTradeResult();
     return;
   }
+  renderTurnOrder('result-turn-order');
   openTradeFlag();
   document.getElementById('ptrade-result-ov').classList.remove('hidden');
   // When AI proposed (anyYes=true): auto-resolve after brief display
@@ -2476,6 +2638,118 @@ function showDevCardReveal(card){
 // Strategic resource values — ore/wheat are scarce and city-critical, so worth more
 const RES_STRAT={wood:1.0,brick:1.0,sheep:1.2,wheat:1.7,ore:2.1};
 
+// ---- 盤面にもとづく判断材料 ----
+// そのプレイヤーが1ターンあたり各資源を何枚産みそうかを見積もる
+function aiProduction(p){
+  const prod={wood:0,brick:0,sheep:0,wheat:0,ore:0};
+  for(const v of board.vertices){
+    if(!v.building||v.player!==p.id)continue;
+    const mult=v.building==='city'?2:1;
+    for(const hid of v.hexes){
+      const h=board.hexes[hid];
+      if(!h.num||h.res==='desert')continue;
+      prod[h.res]+=(PROB[h.num]||0)/36*mult;
+    }
+  }
+  return prod;
+}
+// 自分の産出が乏しい資源ほど交渉で得る価値が高い（希少度 1.0〜2.0）
+function aiScarcity(p,res){
+  if(!p._prodCache||p._prodTurn!==G.diceLog.length){
+    p._prodCache=aiProduction(p);p._prodTurn=G.diceLog.length;
+  }
+  const rate=p._prodCache[res]||0;
+  return clamp(2.0-rate*6,1.0,2.0);
+}
+// 相手の危険度 0〜1。VP・特別賞・伏せ発展カード・手札・盤面の強さから判断する
+function aiThreat(op){
+  if(!op)return 0;
+  const vpTotal=op.vp+op.vpCards;
+  let t=vpTotal/Math.max(5,vpWin()); // 勝利点の進み具合が主軸
+  // 特別賞を持っている、または奪える距離にいる
+  if(G.largestArmy===op.id)t+=0.10;
+  else if(op.knights>=G.largestArmySize-1)t+=0.06;
+  if(G.longestRoad===op.id)t+=0.10;
+  else if(computeRoadLen(op.id)>=G.longestRoadSize-1)t+=0.06;
+  // 伏せたままの発展カード（勝利点が隠れている可能性）
+  const hidden=op.devCards.filter(c=>!c.played&&c.type!=='knight').length;
+  t+=Math.min(0.18,hidden*0.06);
+  // 手札が厚い＝すぐ建設できる
+  t+=Math.min(0.10,sum(op.resources)*0.012);
+  // 盤面の生産力
+  const prod=aiProduction(op);
+  t+=Math.min(0.12,sum(prod)*0.05);
+  return clamp(t,0,1);
+}
+// 首位からどれだけ離れているか 0〜1。遅れているCPUほど強気に動く
+function aiCatchUp(p){
+  const maxVP=Math.max(...G.players.map(x=>x.vp+x.vpCards));
+  return clamp((maxVP-(p.vp+p.vpCards))/4,0,1);
+}
+// getValidSettleVerts などは G.cur を見るため、一時的に視点を入れ替えて調べる
+function _aiAsPlayer(p,fn){
+  const cur=G.cur;G.cur=p.id;
+  try{return fn();}catch(e){return null;}finally{G.cur=cur;}
+}
+// 盤面を見て、いま最も勝利点を伸ばしやすい方針を選ぶ（1ターンに1回だけ計算）
+function aiStrategy(p){
+  if(p._stratTurn===(G.diceLog||[]).length&&p._strat)return p._strat;
+  const prod=aiProduction(p);
+  const catchUp=aiCatchUp(p);
+  const need=Math.max(1,vpWin()-(p.vp+p.vpCards)); // あと何点必要か
+  const s={city:0,settlement:0,road:0,army:0,dev:0};
+
+  // ① 都市化: 既にある開拓地を都市へ（鉄と麦が採れるほど有利）
+  const mySettles=board.vertices.filter(v=>v.building==='settlement'&&v.player===p.id).length;
+  if(mySettles>0&&p.cities>0)
+    s.city=3.4+Math.min(prod.ore,prod.wheat)*15+Math.min(mySettles,p.cities)*0.5;
+
+  // ② 開拓地: 新しい好立地を取る（木とレンガが採れるほど有利）
+  const spots=_aiAsPlayer(p,()=>getValidSettleVerts())||[];
+  if(spots.length>0&&p.settlements>0){
+    const best=spots.reduce((m,vid)=>Math.max(m,scoreVertex(vid)),0);
+    s.settlement=3.0+best*0.09+Math.min(prod.wood,prod.brick)*11;
+  }
+
+  // ③ 最長交易路(+2点): あと何本で届くか
+  if(G.longestRoad!==p.id){
+    const myLen=computeRoadLen(p.id);
+    const gap=Math.max(0,Math.max(5,G.longestRoadSize+1)-myLen);
+    const edges=_aiAsPlayer(p,()=>getValidRoadEdges())||[];
+    if(gap<=3&&p.roads>gap&&edges.length)
+      s.road=4.6-gap*1.1+Math.min(prod.wood,prod.brick)*11;
+  }
+
+  // ④ 最大騎士力(+2点): 手持ちの騎士と鉄の採れ方から
+  if(G.largestArmy!==p.id&&G.devDeck.length>0){
+    const held=p.devCards.filter(c=>c.type==='knight'&&!c.played).length;
+    const gap=Math.max(0,Math.max(3,G.largestArmySize+1)-p.knights);
+    if(gap<=3)s.army=4.2-gap*0.8+held*1.3+prod.ore*9;
+  }
+
+  // ⑤ 発展カード: 隠し勝利点狙い
+  if(G.devDeck.length>0)
+    s.dev=2.2+Math.min(prod.ore,prod.sheep,prod.wheat)*13;
+
+  // 残り点数が少ないなら、2点まとめて取れる手段の価値が上がる
+  if(need<=2){s.road*=1.35;s.army*=1.35;s.dev*=1.2;}
+  // 出遅れているほど、大きく跳ねる手段に賭ける
+  s.road*=1+catchUp*0.5;s.army*=1+catchUp*0.45;s.dev*=1+catchUp*0.35;
+  // 駒切れは選べない
+  if(p.settlements===0)s.settlement=0;
+  if(p.cities===0)s.city=0;
+  if(p.roads<=1)s.road=0;
+
+  let plan='dev',bestV=-1;
+  for(const k of['city','settlement','road','army','dev'])if(s[k]>bestV){bestV=s[k];plan=k;}
+  p._strat={plan,scores:s};p._stratTurn=(G.diceLog||[]).length;
+  return p._strat;
+}
+// 誰かが勝利圏に迫っているか（全員が終盤モードに入る合図）
+function aiEndgamePressure(){
+  const maxVP=Math.max(...G.players.map(x=>x.vp+x.vpCards));
+  return clamp((maxVP-(vpWin()-3))/3,0,1);
+}
 function aiEvaluateTrade(aiPlayer,give,want,proposerId=null){
   const diff=G.difficulty||'normal';
   // Affordability: must have resources to give
@@ -2496,64 +2770,80 @@ function aiEvaluateTrade(aiPlayer,give,want,proposerId=null){
 
   // ゲームフェーズ: 提案者のVPで判定
   let gamePhase='mid';
-  if(propVP<=5)      gamePhase='early';  // 序盤: VP5以下
-  else if(propVP<=7) gamePhase='mid';    // 中盤: VP6-7
+  if(propVP<=4)      gamePhase='early';  // 序盤: VP4以下
+  else if(propVP<=7) gamePhase='mid';    // 中盤: VP5-7（ここから警戒を強める）
   else               gamePhase='late';   // 終盤: VP8以上
 
-  // 終盤: 提案者が勝利圏 — ほぼ拒否
+  // 相手の危険度（VP・特別賞・伏せカード・手札・盤面の生産力）
+  const threat=aiThreat(prop);
+  // 提案者が出遅れているほど、助けても構わないと考える
+  const propCatch=prop?aiCatchUp(prop):0;
+
+  // 終盤: 提案者が勝利圏 — ほぼ拒否（2%前後）
   if(gamePhase==='late'){
-    if(diff==='hard')return Math.random()<0.05;
-    return Math.random()<0.12;
+    if(diff==='hard')return Math.random()<0.02;
+    return Math.random()<0.05;
   }
 
-  // 中盤: VPトップへの消極性
-  if(gamePhase==='mid'&&prop){
-    if(propVP>=maxVP&&propVP>myVP){
-      if(diff==='hard'&&Math.random()>0.12)return false;
-      if(diff==='normal'&&Math.random()>0.28)return false;
+  // 中盤(VP5以上): 相手を伸ばす取引に慎重になる
+  if(gamePhase==='mid'){
+    // VPトップが相手なら最終的な承諾率が1割程度になるよう絞る
+    if(prop&&propVP>=maxVP&&propVP>myVP){
+      if(diff==='hard'&&Math.random()>0.35)return false;
+      if(diff==='normal'&&Math.random()>0.30)return false;
     }
+    // 危険度が高い相手ほど乗らない。出遅れている相手なら乗ってもよい
+    const base=diff==='hard'?0.62:0.80;
+    if(Math.random()>base-threat*0.45+propCatch*0.30)return false;
+  }
+  // 序盤でも、特別賞に近い・伏せカードが多いなど危険な相手は警戒する
+  if(gamePhase==='early'){
+    const base=diff==='hard'?0.92:0.97;
+    if(Math.random()>base-threat*0.55+propCatch*0.22)return false;
   }
 
   // Build-target context for strategic scoring
   const target=aiBuildTarget(aiPlayer);
   const needed=target?COST[target]:{};
 
-  // Score GAIN (give = what AI receives)
+  // Score GAIN (give = what AI receives) — 自分の盤面で採れにくい資源ほど価値が高い
   let gain=0;
   for(const[r,n]of Object.entries(give)){
-    const base=RES_STRAT[r]||1;
+    const base=(RES_STRAT[r]||1)*aiScarcity(aiPlayer,r);
     const hv=aiPlayer.resources[r]||0;
     const nv=needed[r]||0;
     const bonus=nv>0&&hv<nv?2.0:0;
     gain+=(base+bonus)*n;
   }
 
-  // Score LOSS (want = what AI gives up)
+  // Score LOSS (want = what AI gives up) — 採れにくい資源を手放すのは痛い
   let loss=0;
   for(const[r,n]of Object.entries(want)){
-    const base=RES_STRAT[r]||1;
+    const base=(RES_STRAT[r]||1)*aiScarcity(aiPlayer,r);
     const hv=aiPlayer.resources[r]||0;
     const nv=needed[r]||0;
     const penalty=nv>0&&hv<=nv+1?2.8:0;
     loss+=(base+penalty)*n;
   }
 
-  const net=gain-loss;
+  // 相手を利する分を割り引く（危険な相手ほど厳しく見る）
+  // ただし自分が出遅れているときは、多少不利でも動いて差を詰めにいく
+  const net=gain-loss-threat*1.3+aiCatchUp(aiPlayer)*0.9+propCatch*0.8;
 
-  // 序盤: 積極的に応じる — CPU同士ならさらに緩い
+  // 序盤: 比較的応じるが、損な取引はきちんと断る
   if(gamePhase==='early'){
     const aiToAi=prop&&prop.isAI;
     if(aiToAi){
-      // CPU同士: かなり寛容
-      if(diff==='hard')return net>-2.2;
-      return net>-3.0;
+      // CPU同士: 場を回すため寛容
+      if(diff==='hard')return net>-1.2;
+      return net>-1.8;
     }
-    if(diff==='hard')return net>-0.8;
-    return net>-1.5;
+    if(diff==='hard')return net>-0.1;
+    return net>-0.6;
   }
-  // 中盤
-  if(diff==='hard')return net>0.4;
-  return net>-0.4;
+  // 中盤: 明確に得でなければ応じない
+  if(diff==='hard')return net>0.3;
+  return net>-0.1;
 }
 
 // ==================== AI LOGIC ====================
@@ -2648,22 +2938,22 @@ function aiMainAction(){
     }
   }
 
-  // City first — most VP-efficient
+  // 盤面から選んだ方針に沿って建設の優先順位を決める
+  const plan=diff==='easy'?'city':aiStrategy(p).plan;
   const cityVerts=getValidCityVerts();
-  if(canAfford(p,'city')&&p.cities>0&&cityVerts.length){
-    spend(p,'city');
-    const best=cityVerts.reduce((a,b)=>scoreVertex(a)>=scoreVertex(b)?a:b);
-    placeCity(best);
-    setTimeout(()=>{if(isAI(G.cur)&&G.phase==='main-action')aiMainAction();},getAIDelay());return;
-  }
-
-  // Settlement if good spots
   const settleVerts=getValidSettleVerts();
-  if(canAfford(p,'settlement')&&p.settlements>0&&settleVerts.length){
-    spend(p,'settlement');
-    const best=settleVerts.reduce((a,b)=>scoreVertex(a)>=scoreVertex(b)?a:b);
-    placeSettlement(best);
-    setTimeout(()=>{if(isAI(G.cur)&&G.phase==='main-action')aiMainAction();},getAIDelay());return;
+  const buildOrder=plan==='settlement'||plan==='road'?['settlement','city']:['city','settlement'];
+  for(const what of buildOrder){
+    if(what==='city'&&canAfford(p,'city')&&p.cities>0&&cityVerts.length){
+      spend(p,'city');
+      placeCity(cityVerts.reduce((a,b)=>scoreVertex(a)>=scoreVertex(b)?a:b));
+      setTimeout(()=>{if(isAI(G.cur)&&G.phase==='main-action')aiMainAction();},getAIDelay());return;
+    }
+    if(what==='settlement'&&canAfford(p,'settlement')&&p.settlements>0&&settleVerts.length){
+      spend(p,'settlement');
+      placeSettlement(settleVerts.reduce((a,b)=>scoreVertex(a)>=scoreVertex(b)?a:b));
+      setTimeout(()=>{if(isAI(G.cur)&&G.phase==='main-action')aiMainAction();},getAIDelay());return;
+    }
   }
 
   // Trade toward city/settlement FIRST — before spending resources on roads
@@ -2698,10 +2988,16 @@ function aiMainAction(){
   }
 
   // Dev card: only when close to win, or no useful builds remain and low probability
-  const closeWin=totalVP>=VP_WIN-2;
+  const closeWin=totalVP>=vpWin()-2;
   const noBuildPath=!cityVerts.length&&!settleVerts.length&&(!roadEdges.length||!aiRoadIsUseful(p));
-  const devChance=closeWin?0.80:noBuildPath?{easy:0.05,normal:0.22,hard:0.38}[diff]||0.22:
+  let devChance=closeWin?0.80:noBuildPath?{easy:0.05,normal:0.22,hard:0.38}[diff]||0.22:
                             {easy:0.04,normal:0.10,hard:0.18}[diff]||0.10;
+  // 出遅れている／誰かが勝利圏に迫っている場合は、勝利点を狙って発展カードを積極的に買う
+  if(diff!=='easy'){
+    devChance=Math.min(0.9,devChance+aiCatchUp(p)*0.35+aiEndgamePressure()*0.3);
+    // 「発展カード」「最大騎士力」を方針に選んでいるなら購入を最優先にする
+    if(plan==='dev'||plan==='army')devChance=Math.min(0.92,devChance+0.35);
+  }
   if(canAfford(p,'devCard')&&G.devDeck.length>0&&Math.random()<devChance){
     spend(p,'devCard');
     const card=G.devDeck.pop();
@@ -2721,8 +3017,10 @@ function aiUseDevCard(p){
   if(knight){
     const robberOnOurHex=board.hexes.some(h=>h.hasRobber&&h.vertices.some(vid=>board.vertices[vid].building&&board.vertices[vid].player===G.cur));
     const armyLead=p.knights>=G.largestArmySize; // we're tied or ahead
-    const useChance=diff==='hard'?(robberOnOurHex?0.85:armyLead?0.45:0.3):
-                    diff==='normal'?(robberOnOurHex?0.6:0.25):0;
+    let useChance=diff==='hard'?(robberOnOurHex?0.85:armyLead?0.45:0.3):
+                  diff==='normal'?(robberOnOurHex?0.6:0.25):0;
+    // 最大騎士力を狙う方針なら、積極的に騎士を切って数を伸ばす
+    if(diff!=='easy'&&aiStrategy(p).plan==='army')useChance=Math.min(0.95,useChance+0.4);
     if(Math.random()<useChance){
       knight.played=true;G.devPlayedThisTurn=true;p.knights++;
       updateLargestArmy();
@@ -2795,15 +3093,32 @@ function aiUseDevCard(p){
   return false;
 }
 
+// いま何を揃えにいくか（交渉や銀行交換の目標になる）— 盤面で選んだ方針に従う
 function aiBuildTarget(p){
-  if(p.cities>0&&getValidCityVerts().length>0)return 'city';
-  if(p.settlements>0&&getValidSettleVerts().length>0)return 'settlement';
-  // Road only for designated road builder (others save resources for settlements/cities)
-  const isRoadBuilder=(G._roadBuilderAI instanceof Set?G._roadBuilderAI:new Set()).has(p.id);
-  if(isRoadBuilder&&p.roads>0&&getValidRoadEdges().length>0&&aiRoadIsUseful(p))return 'road';
-  // Dev card only as last resort when close to winning
-  const totalVP=p.vp+p.vpCards;
-  if(G.devDeck.length>0&&totalVP>=VP_WIN-2)return 'devCard';
+  const diff=G.difficulty||'normal';
+  const canCity=p.cities>0&&(_aiAsPlayer(p,()=>getValidCityVerts())||[]).length>0;
+  const canSettle=p.settlements>0&&(_aiAsPlayer(p,()=>getValidSettleVerts())||[]).length>0;
+  const canRoad=p.roads>0&&(_aiAsPlayer(p,()=>getValidRoadEdges())||[]).length>0;
+  const canDev=G.devDeck.length>0;
+  if(diff==='easy'){
+    if(canCity)return 'city';
+    if(canSettle)return 'settlement';
+    return canDev&&p.vp+p.vpCards>=vpWin()-2?'devCard':null;
+  }
+  const plan=aiStrategy(p).plan;
+  const order=({
+    city:       ['city','settlement','dev','road'],
+    settlement: ['settlement','city','road','dev'],
+    road:       ['road','settlement','city','dev'],
+    army:       ['dev','city','settlement','road'],
+    dev:        ['dev','city','settlement','road']
+  })[plan]||['city','settlement','dev','road'];
+  for(const t of order){
+    if(t==='city'&&canCity)return 'city';
+    if(t==='settlement'&&canSettle)return 'settlement';
+    if(t==='road'&&canRoad&&(plan==='road'||(G._roadBuilderAI instanceof Set&&G._roadBuilderAI.has(p.id))))return 'road';
+    if(t==='dev'&&canDev&&(plan==='dev'||plan==='army'||p.vp+p.vpCards>=vpWin()-2))return 'devCard';
+  }
   return null;
 }
 
@@ -2878,6 +3193,8 @@ function _aiRoadBFSScore(fromEid,settleSet,myId){
 function aiRoadIsUseful(p){
   const isRoadBuilder=(G._roadBuilderAI instanceof Set?G._roadBuilderAI:new Set()).has(p.id);
   const settleSet=new Set(getValidSettleVerts());
+  // 盤面から「最長交易路狙い」を選んでいるなら道路に投資する
+  if((G.difficulty||'normal')!=='easy'&&aiStrategy(p).plan==='road')return true;
   // If valid settlement spots already exist and player has pieces, save resources for settlement
   // Exception: the designated road builder pursues longest road regardless
   if(settleSet.size>0&&p.settlements>0&&!isRoadBuilder)return false;
@@ -2898,16 +3215,17 @@ function aiRoadIsUseful(p){
 
 function aiTrade(p){
   const diff=G.difficulty||'normal';
-  if(diff==='easy'&&Math.random()>0.35)return false;
+  if(diff==='easy'&&Math.random()>0.5)return false;
   // Determine best target — road only for designated road builder
   const isRoadBuilder=(G._roadBuilderAI instanceof Set?G._roadBuilderAI:new Set()).has(p.id);
-  const targets=isRoadBuilder?['city','settlement','road']:['city','settlement'];
+  const targets=isRoadBuilder?['city','settlement','road','devCard']:['city','settlement','devCard'];
   for(const tgt of targets){
     if(!COST[tgt])continue;
     const needed=COST[tgt];
     const canBuild=(tgt==='city'&&p.cities>0&&getValidCityVerts().length)
                  ||(tgt==='settlement'&&p.settlements>0&&getValidSettleVerts().length)
-                 ||(tgt==='road'&&p.roads>0&&getValidRoadEdges().length&&aiRoadIsUseful(p));
+                 ||(tgt==='road'&&p.roads>0&&getValidRoadEdges().length&&aiRoadIsUseful(p))
+                 ||(tgt==='devCard'&&G.devDeck.length>0);
     if(!canBuild)continue;
     const deficit={};
     for(const[r,n]of Object.entries(needed))if((p.resources[r]||0)<n)deficit[r]=n-(p.resources[r]||0);
@@ -2920,13 +3238,43 @@ function aiTrade(p){
         if(G.bank[wantR]>0){
           p.resources[r]-=ratio;G.bank[r]+=ratio;
           p.resources[wantR]++;G.bank[wantR]--;
+          clampBank();
           addLog(`${p.name}(AI): ${RES_JP[r]}×${ratio}→${RES_JP[wantR]}`);
           updateUI();return true;
         }
       }
     }
   }
-  return false;
+  // 目標に届かない場合でも、余った資源は銀行に返して溜め込まない
+  return _aiDumpSurplus(p);
+}
+// 余剰資源の銀行交換 — CPUが資源を抱え込んで銀行が枯渇するのを防ぐ
+function _aiDumpSurplus(p){
+  const diff=G.difficulty||'normal';
+  if(diff==='easy')return false;
+  const total=sum(p.resources);
+  // 手札が多いほど早めに放出する（7枚超で強制的に捨てさせられる前に使い切る）
+  const need=total>=10?3:total>=8?4:5;
+  let give=null;
+  for(const r of RES){
+    const ratio=getTradeRatio(p,r);
+    const have=p.resources[r]||0;
+    if(have<ratio||have<need)continue;
+    // 交換しても手元に1枚以上残る場合のみ（港持ちなら余裕を持って出せる）
+    if(have-ratio<1&&total<8)continue;
+    if(!give||have>give.have||(have===give.have&&ratio<give.ratio))give={r,ratio,have};
+  }
+  if(!give)return false;
+  // 欲しいのは「戦略価値が高く、手持ちが少ない」資源
+  const want=RES.filter(r=>r!==give.r&&G.bank[r]>0)
+    .map(r=>({r,score:(RES_STRAT[r]||1)*2-(p.resources[r]||0)}))
+    .sort((a,b)=>b.score-a.score)[0];
+  if(!want)return false;
+  p.resources[give.r]-=give.ratio;G.bank[give.r]+=give.ratio;
+  p.resources[want.r]++;G.bank[want.r]--;
+  clampBank();
+  addLog(`${p.name}(AI): ${RES_JP[give.r]}×${give.ratio}→${RES_JP[want.r]}（余剰整理）`);
+  updateUI();return true;
 }
 
 // Build the ordered list of trade proposals AI can make.
@@ -3095,6 +3443,28 @@ function resEntriesToChips(entries){
     .join(' ');
   return chips||'<span style="color:#8aaac0;font-size:12px">なし</span>';
 }
+// 手番順ストリップ: 現在の手番から順に並べて表示する
+function renderTurnOrder(elId){
+  const el=document.getElementById(elId);
+  if(!el||!G.players||!G.players.length)return;
+  const n=G.players.length;
+  // 特別建設フェーズ中は「次のアクティブプレイヤー」を起点にする
+  const start=G.phase==='special-build'?G.nextActiveCur:G.cur;
+  // 2番手（特別建設フェーズで行動できる人）は5人以上のときだけ存在する
+  const second=n>=5?(start+3)%n:-1;
+  let h='<span style="font-size:10px;color:#f4a460;font-weight:700;align-self:center;margin-right:2px">🔄 この後の手番</span>';
+  // 現在の手番のプレイヤーは表示しない（i=0 を飛ばす）
+  for(let i=1;i<n;i++){
+    const p=G.players[(start+i)%n];
+    const isSecond=p.id===second;
+    const meMark=isMe(p.id)?'★':'';
+    h+=`<span class="turn-chip${isSecond?' now':''}">`+
+      `<span class="tc-n">${isSecond?'2番手':i}</span>`+
+      `<span style="color:${p.color};font-weight:700">${escapeHtml(p.name)}${meMark}</span>`+
+      `<span style="color:#f4d060;font-size:10px">⭐${p.vp+p.vpCards}</span></span>`;
+  }
+  el.innerHTML=h;
+}
 function buildMyResHtml(pid){
   const p=G.players[pid];if(!p)return '';
   const chips=RES.filter(r=>p.resources[r]>0)
@@ -3106,7 +3476,7 @@ function buildMyResHtml(pid){
 
 function updateUI(){
   if(!G.players?.length)return;
-  updatePlayerCards();updateBank();updateSpecial();updateActionButtons();
+  updatePlayerCards();updateBank();updateSpecial();updateActionButtons();updateCostPanel();
   // Show special build setting toggle
   const sbSet=document.getElementById('sb-setting');
   if(sbSet){sbSet.style.display=G.players.length&&G.players.length>=5?'block':'none';}
@@ -3143,9 +3513,9 @@ function makePlayerCard(p){
   const tot=sum(p.resources);
   const totalVP=p.vp+p.vpCards;
   const devCount=p.devCards.filter(c=>!c.played&&c.type!=='vp').length;
-  // Show own resources always; show opponent resources only if toggle enabled
+  // 自分は常に表示。相手は「公開」設定のときだけ内訳を見せる
   const isSelf=isMe(p.id);
-  const showRes=isSelf||G.showOppRes;
+  const showRes=isSelf||G.openHands==='on'||(!NET.on&&G.showOppRes);
   let resHtml='';
   if(showRes){
     if(p.resources.wood)resHtml+='<span class="chip rw">🌲'+p.resources.wood+'</span>';
@@ -3161,7 +3531,9 @@ function makePlayerCard(p){
   }
   d.innerHTML=
     '<div class="prow1">'+
-      '<span class="pn" style="color:'+p.color+';font-size:15px;font-weight:800">'+(p.isAI?'🤖':'👤')+' '+p.name+(p.isAI?'<span class="pai" style="margin-left:4px">AI</span>':'')+'</span>'+
+      '<span class="pn" style="color:'+p.color+';font-size:15px;font-weight:800">'+(p._lost?'🔌':(p.isAI?'🤖':'👤'))+' '+escapeHtml(p.name)+
+        (p._lost?'<span class="pai" style="margin-left:4px;background:#6a3010;color:#ffcc99">切断・CPU代行</span>'
+               :(p.isAI?'<span class="pai" style="margin-left:4px">AI</span>':''))+'</span>'+
       '<span style="font-size:20px;color:#f4d060;font-weight:900">⭐'+totalVP+'</span>'+
     '</div>'+
     '<div class="pvmeta" style="font-size:13px;gap:8px;margin-top:4px">'+
@@ -3181,7 +3553,17 @@ function updatePlayerCards(){
   tb.style.cssText='width:100%;margin-bottom:4px;font-size:11px;padding:3px 6px';
   tb.textContent=G.showOppRes?'🔓 CPU資源を隠す':'🔒 CPU資源を表示';
   tb.onclick=()=>{G.showOppRes=!G.showOppRes;updatePlayerCards();};
-  if(!NET.on)lp.appendChild(tb); // オンラインでは相手の資源は常に非公開
+  // オンラインや「公開」設定のときは開始前の設定に従うのでトグルは出さない
+  if(!NET.on&&G.openHands!=='on')lp.appendChild(tb);
+  // コスト表を隠しているときだけ再表示ボタンを出す
+  if(G.showCosts===false){
+    const cb=document.createElement('button');
+    cb.className='btn-s btn-opp';
+    cb.style.cssText='width:100%;margin-bottom:4px;font-size:11px;padding:3px 6px';
+    cb.textContent='🔨 建設コスト表を表示';
+    cb.onclick=toggleCostPanel;
+    lp.appendChild(cb);
+  }
   // 2-column grid — all 6 players
   const grid=document.createElement('div');
   grid.className='pc-grid';
@@ -3248,6 +3630,42 @@ function updateBank(){
     `<div class="bank-row" style="border-top:1px solid #1a3a5c;margin-top:2px"><span style="white-space:nowrap"><span class="bank-icon">📜</span>発展カード</span><span class="bank-val">${G.devDeck.length}</span></div>`;
 }
 
+// ---- 建設コスト表 ----
+const COST_ROWS=[
+  {key:'road',name:'🛤 街道',vp:''},
+  {key:'settlement',name:'🏠 開拓地',vp:'＋1点'},
+  {key:'city',name:'🏙 都市',vp:'＋2点'},
+  {key:'devCard',name:'📜 発展カード',vp:''}
+];
+function updateCostPanel(){
+  const panel=document.getElementById('cost-panel');
+  const body=document.getElementById('cost-body');
+  if(!panel||!body)return;
+  const on=G.showCosts!==false&&!!(G.players&&G.players.length);
+  panel.classList.toggle('on',on);
+  if(!on)return;
+  const me=G.players[NET.on?NET.myPid:G.cur];
+  let h='<div style="font-size:11px;color:#f4a460;font-weight:700;border-bottom:1px solid #1a3a5c;padding-bottom:4px;margin-bottom:2px;display:flex;justify-content:space-between;align-items:center">'+
+    '<span>🔨 建設コスト</span>'+
+    '<button class="btn-s" style="font-size:9px;padding:1px 5px" onclick="toggleCostPanel()" title="コスト表を隠す">✕</button></div>';
+  for(const row of COST_ROWS){
+    const cost=COST[row.key];
+    // 自分が今すぐ払えるコストは明るく表示する
+    const afford=me?Object.entries(cost).every(([r,n])=>me.resources[r]>=n):false;
+    const icons=Object.entries(cost).map(([r,n])=>RES_EMOJI[r].repeat(n)).join('');
+    h+=`<div class="cost-row" style="opacity:${afford?1:.5}">`+
+      `<div class="cost-name"><span>${row.name}</span>${row.vp?`<span class="cost-vp">${row.vp}</span>`:''}</div>`+
+      `<div class="cost-ico">${icons}</div></div>`;
+  }
+  h+='<div class="cost-row" style="border-top:1px solid #1a3a5c;padding-top:5px">'+
+    `<div class="cost-name"><span>🏆 勝利</span><span class="cost-vp">${vpWin()}点</span></div>`+
+    '<div style="font-size:10px;color:#8aaac0;line-height:1.5">⚔️ 最大騎士力 3回〜 ＝＋2点<br>🛤️ 最長交易路 5本〜 ＝＋2点</div></div>';
+  body.innerHTML=h;
+}
+function toggleCostPanel(){
+  G.showCosts=G.showCosts===false;
+  updateCostPanel();updatePlayerCards();
+}
 function updateSpecial(){
   const la=G.largestArmy!==-1?G.players[G.largestArmy]:null;
   const lr=G.longestRoad!==-1?G.players[G.longestRoad]:null;
@@ -3272,8 +3690,12 @@ function updateActionButtons(){
     b.disabled=dis;if(title)b.title=title;b.onclick=fn;btns.appendChild(b);
   };
   if(ph==='main-roll'){
-    if(p.vp+p.vpCards>=VP_WIN)add('🏆 勝利宣言！','btn-win',declareVictory);
-    add('🎲 サイコロを振る','btn-p',rollDice);
+    if(G._rolling){ // 演出中は操作を受け付けない
+      btns.innerHTML='<span style="color:#f4a460;font-size:12px;font-style:italic">🎲 サイコロを振っています...</span>';
+      return;
+    }
+    if(G.declareWin!=='off'&&p.vp+p.vpCards>=vpWin())add('🏆 勝利宣言！','btn-win',declareVictory);
+    add('🎲 サイコロを振る','btn-p btn-roll',rollDice);
     // アクティブプレイヤーはロール前の発展カード使用が可能
     const hasPlayable=p.devCards.some(c=>!c.played&&c.type!=='vp'&&!c.newThisTurn);
     if(hasPlayable&&!G.devPlayedThisTurn)add('🃏 カード使用（ロール前）','btn-g',()=>{G._preRollPlay=true;showDevCards();});
@@ -3283,7 +3705,7 @@ function updateActionButtons(){
     b.innerHTML='🏴 山賊を移動<br><span style="font-size:10px;color:#cc7777">盤面のタイルをクリック</span>';
     btns.appendChild(b);
   } else if(ph==='main-action'){
-    if(p.vp+p.vpCards>=VP_WIN)add('🏆 勝利宣言！','btn-win',declareVictory);
+    if(G.declareWin!=='off'&&p.vp+p.vpCards>=vpWin())add('🏆 勝利宣言！','btn-win',declareVictory);
     add('🛤 道路',`btn-s`,tryBuildRoad,!canAfford(p,'road')||!p.roads,COST_JP.road);
     add('🏠 開拓地','btn-s',tryBuildSettlement,!canAfford(p,'settlement')||!p.settlements,COST_JP.settlement);
     add('🏙 都市','btn-s',tryBuildCity,!canAfford(p,'city')||!p.cities,COST_JP.city);
@@ -3342,7 +3764,7 @@ function startGame(){
   const avW=mid.clientWidth-16;
   // Panels are absolute overlays; canvas is centered in #mid.
   // Keep canvas from going behind panels: subtract both panel groups.
-  const panelW=248+165+165+30; // mid-left + ctrl-panel + mid-right + gaps
+  const panelW=248+172+200+40; // mid-left + ctrl-panel + mid-right + gaps
   const canvasMaxW=avW-panelW;
   const rFromH=(avH-90)/12;
   const rFromW=(canvasMaxW-90)/(6*Math.sqrt(3));
@@ -3358,10 +3780,17 @@ function startGame(){
   initGame(defs);
   G.difficulty=window._pendingDifficulty||'normal';
   G.bankView=document.getElementById('bank-view-sel')?.value||'gauge';
-  updateBank();
+  G.vpWin=parseInt(document.getElementById('vpwin-sel')?.value)||VP_WIN_DEFAULT;
+  G.declareWin=document.getElementById('declare-sel')?.value||'on';
+  G.diceFx=document.getElementById('dicefx-sel')?.value||'on';
+  G.openHands=document.getElementById('openhands-sel')?.value||'off';
+  G.showOppRes=G.openHands==='on';
+  updateBank();updateCostPanel();updatePlayerCards();
 }
 
 buildSetupRows();
+fillVpOptions('vpwin-sel');
+fillVpOptions('net-vpwin');
 
 // ==================== ONLINE (NETWORK) LAYER ====================
 // ホスト権威方式: ホストがゲーム全体を実行し、ゲストは操作を送信して状態同期を受け取る
@@ -3370,6 +3799,7 @@ const NET={
   peer:null,conns:[],hostConn:null,code:'',name:'',
   names:new Map(),pidByConn:new Map(),
   colorIdx:[0],lobbyColors:null,lobbyYou:0,
+  lostSeats:new Map(), // 切断中の席（名前 → プレイヤー番号）。同じ名前で戻れる
   autoSB:'off',curTrade:null,
   _tradeTimer:null,_hlTimer:null,_sbHandled:null
 };
@@ -3396,11 +3826,12 @@ function serializeState(forPid){
   }
   g._undoSnapshot=G._undoSnapshot?1:null;
   g.devDeck=G.devDeck.map(()=>'?'); // 山札の中身はゲストに送らない
+  const openHands=G.openHands==='on';
   g.players=G.players.map(p=>{
     if(p.id===forPid)return {...p,resources:{...p.resources},devCards:p.devCards.map(c=>({...c}))};
-    // 他人: 合計枚数だけ残し、資源の内訳と発展カードの種類を伏せる
-    const hidden={wood:0,brick:0,sheep:0,wheat:0,ore:0,_hidden:sum(p.resources)};
-    return {...p,resources:hidden,
+    // 他人: 発展カードの種類は常に伏せる。資源は「公開」設定のときだけ内訳を送る
+    const res=openHands?{...p.resources}:{wood:0,brick:0,sheep:0,wheat:0,ore:0,_hidden:sum(p.resources)};
+    return {...p,resources:res,
       devCards:p.devCards.map(c=>({type:c.type==='vp'?'vp':'?',played:c.played,newThisTurn:false}))};
   });
   return {g,b:board,R,status:document.getElementById('status').textContent};
@@ -3467,7 +3898,7 @@ function sanitizeIncomingState(g){
     const res={};
     for(const k in(p.resources||{}))res[k]=_num(p.resources[k]);
     return {...p,
-      id:_num(p.id,i),name:_safeName(p.name),color:_safeColor(p.color),isAI:!!p.isAI,
+      id:_num(p.id,i),name:_safeName(p.name),color:_safeColor(p.color),isAI:!!p.isAI,_lost:!!p._lost,
       resources:res,
       devCards:Array.isArray(p.devCards)?p.devCards.map(c=>({type:String(c&&c.type||'?').slice(0,20),played:!!(c&&c.played),newThisTurn:!!(c&&c.newThisTurn)})):[],
       settlements:_num(p.settlements),cities:_num(p.cities),roads:_num(p.roads),
@@ -3479,6 +3910,10 @@ function sanitizeIncomingState(g){
   for(const k of['cur','winner','largestArmy','longestRoad','largestArmySize','longestRoadSize','specialBuildIdx','nextActiveCur','discardCurrent'])
     g[k]=_num(g[k]);
   g.bankView=g.bankView==='num'?'num':'gauge';
+  g.openHands=g.openHands==='on'?'on':'off';
+  g.declareWin=g.declareWin==='off'?'off':'on';
+  g.diceFx=g.diceFx==='off'?'off':'on';
+  g.vpWin=(g.vpWin>=5&&g.vpWin<=20)?_num(g.vpWin):VP_WIN_DEFAULT;
   g.diceLog=Array.isArray(g.diceLog)
     ?g.diceLog.map(e=>({name:_safeName(e&&e.name),d1:_num(e&&e.d1),d2:_num(e&&e.d2),total:_num(e&&e.total)}))
     :[];
@@ -3548,7 +3983,7 @@ function fitCanvas(){
   const mid=document.getElementById('mid');
   const avH=mid.clientHeight-16;
   const avW=mid.clientWidth-16;
-  const panelW=248+165+165+30;
+  const panelW=248+172+200+40;
   const canvasMaxW=avW-panelW;
   const rFromH=(avH-90)/12;
   const rFromW=(canvasMaxW-90)/(6*Math.sqrt(3));
@@ -3677,15 +4112,19 @@ function netTradeBegin(){
     return;
   }
   G._tradeOpen=true;
-  if(pendingTrade.wasAIProposed){
-    for(const op of G.players){
-      if(op.id===pendingTrade.proposer||op.isAI)continue;
-      const ca=Object.entries(pendingTrade.want).every(([r,n])=>op.resources[r]>=n);
-      if(!ca)pendingTrade.reactions[op.id]='no';
-    }
-  }
+  // 資源が足りない人を即座に「❌」にすると手札が推測されてしまうため、
+  // 他の人と同じように「考え中」のまま扱い、少し遅れて自動で断る
+  const cantAfford=G.players.filter(op=>op.id!==pendingTrade.proposer&&!op.isAI
+    &&!Object.entries(pendingTrade.want).every(([r,n])=>op.resources[r]>=n));
   const pendingH=G.players.filter(op=>op.id!==pendingTrade.proposer&&!op.isAI&&!pendingTrade.reactions.hasOwnProperty(op.id));
   if(!pendingH.length){netTradeResults();return;}
+  for(const op of cantAfford){
+    const cap=pendingTrade,pid=op.id;
+    setTimeout(()=>{
+      if(pendingTrade!==cap||!pendingTrade)return;
+      if(!pendingTrade.reactions.hasOwnProperty(pid))netOnReact(pid,false);
+    },2200+Math.random()*3500); // 人が断るのと見分けがつかない間合い
+  }
   clearTimeout(NET._tradeTimer);
   NET._tradeTimer=setTimeout(()=>{
     if(!pendingTrade)return;
@@ -3835,6 +4274,7 @@ function netRenderReact(trade,secs){
     if(NET.myPid!==trade.proposer){myResEl.style.display='block';myResEl.innerHTML=buildMyResHtml(NET.myPid);}
     else myResEl.style.display='none';
   }
+  renderTurnOrder('react-turn-order');
   if(secs!=null)startTradeTimer(secs,null);
   document.getElementById('ptrade-react-ov').classList.remove('hidden');
 }
@@ -3904,6 +4344,7 @@ function netRenderResult(trade,secs){
     if(NET.myPid!==trade.proposer){myResEl.style.display='block';myResEl.innerHTML=buildMyResHtml(NET.myPid);}
     else myResEl.style.display='none';
   }
+  renderTurnOrder('result-turn-order');
   if(secs!=null)startTradeTimer(secs,null);
   document.getElementById('ptrade-result-ov').classList.remove('hidden');
 }
@@ -3933,6 +4374,7 @@ function hostOnData(conn,m){
   switch(m.a){
     case 'hello':{
       const nm=sanitizeName(m.name)||('プレイヤー'+(NET.conns.indexOf(conn)+2));
+      if(NET.started){hostTryRejoin(conn,nm);break;} // ゲーム中は再接続として扱う
       NET.names.set(conn,nm);
       netBroadcastLobby();
       break;
@@ -3957,11 +4399,14 @@ function hostOnLeave(conn){
   if(idx!==-1)NET.conns.splice(idx,1);
   if(!NET.started){NET.names.delete(conn);if(idx!==-1)NET.colorIdx.splice(idx+1,1);netBroadcastLobby();return;}
   const pid=NET.pidByConn.get(conn);
+  NET.pidByConn.delete(conn);
   if(pid==null||!G.players||!G.players[pid]||G.winner!==-1)return;
   const p=G.players[pid];
+  if(p.isAI&&p._lost)return; // すでに切断処理済み
   if(p.isAI)return;
-  p.isAI=true;
-  addLog(`⚠️ ${p.name} が切断しました — 以降はCPUが代行します`);
+  p.isAI=true;p._lost=true; // CPUが代行しつつ、復帰待ちとして記録する
+  NET.lostSeats.set(p.name,pid);
+  addLog(`🔌 ${p.name} が切断しました — CPUが代行中（同じ名前で再入室すれば復帰できます）`);
   if(G.discardCurrent===pid){
     const need=Math.floor(sum(p.resources)/2);
     const disc={};let rem=need;
@@ -3974,19 +4419,43 @@ function hostOnLeave(conn){
   }
   updateUI();render();checkAI();
 }
+// 同じ名前で入り直してきたゲストを、元の席に復帰させる
+function hostTryRejoin(conn,nm){
+  const pid=NET.lostSeats.get(nm);
+  if(pid==null||!G.players||!G.players[pid]||G.winner!==-1){
+    // 空いている席がない → 参加を断る
+    try{conn.send({a:'reject',reason:'このルームは対戦中です。切断した本人であれば、同じ名前で入り直してください。'});}catch(_){/*noop*/}
+    setTimeout(()=>{try{conn.close();}catch(_){/*noop*/}},800);
+    return;
+  }
+  NET.lostSeats.delete(nm);
+  if(NET.conns.indexOf(conn)===-1)NET.conns.push(conn);
+  NET.pidByConn.set(conn,pid);
+  const p=G.players[pid];
+  p.isAI=false;p._lost=false;
+  addLog(`🔌 ${p.name} が再接続しました — 操作を本人に戻します`);
+  try{conn.send({a:'start',pid,R,cw:canvas.width,ch:canvas.height,st:serializeState(pid)});}catch(_){/*noop*/}
+  updateUI();render();
+  // 復帰した席が手番中なら、CPUの自動処理を止めて本人の操作を待つ
+  if(G.cur===pid&&isAnyTradeModalOpen()===false)updateActionButtons();
+}
 
 // ---- 接続処理: ゲスト ----
 function guestOnData(m){
   if(!m||typeof m!=='object')return;
   switch(m.a){
     case 'lobby':netRenderLobby(m.names||[],false,m.code,m.colors,m.you);break;
-    case 'start':
+    case 'start':{
+      const rejoined=NET.myPid>=0; // 一度参加していたなら再接続
       NET.started=true;NET.myPid=m.pid;
+      document.getElementById('net-dead-ov')?.remove();
       document.getElementById('net-ov').classList.add('hidden');
       setGuestBoardSize(m.R,m.cw,m.ch);
       applyState(m.st);
-      addLog('🌐 オンラインゲーム開始！');
+      addLog(rejoined?'🔌 再接続しました':'🌐 オンラインゲーム開始！');
       break;
+    }
+    case 'reject':netDead(String(m.reason||'参加できませんでした').slice(0,120),false);break;
     case 'state':if(NET.started)applyState(m.st);break;
     case 'log':if(NET.started)addLog(m.msg);break;
     case 'fx':if(NET.started)guestFx(m);break;
@@ -3998,7 +4467,7 @@ function guestFx(m){
   switch(m.type){
     case 'dice':
       document.getElementById('dice-box').textContent=diceFace(d.d1)+diceFace(d.d2);
-      showDiceAnnounce(d.d1,d.d2,d.total);
+      showDiceAnnounce(d.d1,d.d2,d.total,_num(d.spin,650)); // ホストと同じ長さで回す
       break;
     case 'gain':
       for(const[pid,rs]of Object.entries(d.gains||{}))animateResourceGain(Number(pid),rs);
@@ -4192,8 +4661,12 @@ function _netTryHostId(attempt){
     else if(!NET.started){const el=document.getElementById('net-online-err');if(el)el.textContent='接続エラー: '+e.type;}
   });
   peer.on('connection',conn=>{
-    if(NET.started||NET.conns.length>=5){setTimeout(()=>{try{conn.close();}catch(_){/*noop*/}},500);return;}
-    conn.on('open',()=>{NET.conns.push(conn);NET.colorIdx.push(_freeColorIdx());netBroadcastLobby();});
+    // ゲーム中の接続は再接続の可能性があるので受け付け、hello の名前で判断する
+    if(!NET.started&&NET.conns.length>=5){setTimeout(()=>{try{conn.close();}catch(_){/*noop*/}},500);return;}
+    conn.on('open',()=>{
+      if(NET.started)return; // 再接続は hostTryRejoin が席を割り当てる
+      NET.conns.push(conn);NET.colorIdx.push(_freeColorIdx());netBroadcastLobby();
+    });
     conn.on('data',d=>hostOnData(conn,d));
     conn.on('close',()=>hostOnLeave(conn));
     conn.on('error',()=>hostOnLeave(conn));
@@ -4224,13 +4697,38 @@ function netJoinRoom(code){
     else if(!NET.started){if(el)el.textContent='接続エラー: '+e.type;}
   });
 }
-function netDead(msg){
+function netDead(msg,canRetry=true){
   if(G.winner!==-1)return;
+  document.getElementById('net-dead-ov')?.remove();
   const d=document.createElement('div');
-  d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px';
+  d.id='net-dead-ov';
+  d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;text-align:center';
   d.innerHTML=`<div style="font-size:22px;color:#ff8888;font-weight:700">⚠️ ${escapeHtml(msg)}</div>`+
-    `<button class="btn-p" style="font-size:15px;padding:10px 24px" onclick="location.reload()">トップに戻る</button>`;
+    (canRetry?`<div style="font-size:13px;color:#c8dff0;max-width:420px;line-height:1.7">`+
+      `席は残っていて、いまはCPUが代行しています。<br>「再接続」を押すと<b>同じ名前（${escapeHtml(NET.name||'')}）</b>で元の席に戻れます。</div>`+
+      `<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">`+
+      `<button class="btn-p" style="font-size:15px;padding:10px 24px" onclick="netReconnect()">🔌 再接続する</button>`+
+      `<button class="btn-s" style="font-size:14px;padding:10px 20px" onclick="location.reload()">トップに戻る</button></div>`
+     :`<button class="btn-p" style="font-size:15px;padding:10px 24px" onclick="location.reload()">トップに戻る</button>`);
   document.body.appendChild(d);
+}
+// 切断されたゲストが、同じルーム・同じ名前で入り直す
+function netReconnect(){
+  const code=NET.code,name=NET.name;
+  if(!code||!name){location.reload();return;}
+  document.getElementById('net-dead-ov')?.remove();
+  try{if(NET.peer)NET.peer.destroy();}catch(_){/*noop*/}
+  NET.peer=null;NET.hostConn=null;NET.started=false;
+  const note=document.createElement('div');
+  note.id='net-dead-ov';
+  note.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;color:#c8dff0;font-size:17px';
+  note.textContent='🔌 再接続しています...';
+  document.body.appendChild(note);
+  netJoinRoom(code);
+  // 一定時間つながらなければ案内を戻す
+  setTimeout(()=>{
+    if(!NET.started)netDead('再接続できませんでした。ホストの接続が切れている可能性があります。');
+  },12000);
 }
 // ホスト: オンラインゲーム開始
 function netStartGame(){
@@ -4253,7 +4751,7 @@ function netStartGame(){
   const mid=document.getElementById('mid');
   const avH=mid.clientHeight-16;
   const avW=mid.clientWidth-16;
-  const panelW=248+165+165+30;
+  const panelW=248+172+200+40;
   const canvasMaxW=avW-panelW;
   const rFromH=(avH-90)/12;
   const rFromW=(canvasMaxW-90)/(6*Math.sqrt(3));
@@ -4265,6 +4763,11 @@ function netStartGame(){
   initGame(defs);
   G.difficulty=diff;
   G.bankView=document.getElementById('net-bank-view')?.value||'gauge';
+  G.vpWin=parseInt(document.getElementById('net-vpwin')?.value)||VP_WIN_DEFAULT;
+  G.declareWin=document.getElementById('net-declare')?.value||'on';
+  G.diceFx=document.getElementById('net-dicefx')?.value||'on';
+  G.openHands=document.getElementById('net-openhands')?.value||'off';
+  G.showOppRes=G.openHands==='on';
   NET.myPid=G._defKeys.indexOf('H');
   NET.pidByConn=new Map();
   NET.conns.forEach((c,i)=>{NET.pidByConn.set(c,G._defKeys.indexOf('C'+i));});
