@@ -101,7 +101,17 @@ canvas{display:block;position:relative;z-index:1}
 .modal{background:#0c1e32;border:2px solid #2e5a80;border-radius:12px;padding:22px;max-width:500px;width:92%;max-height:85vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.6)}
 .modal h3{color:#f4a460;margin-bottom:14px;font-size:17px}
 .modal-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
-.setup-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px;background:#071525;border-radius:8px;border:1px solid #1a3a5c}
+/* オフライン開始前画面: 設定とプレイヤーを横並びにしてスクロールを不要にする */
+.setup-modal{max-width:min(96vw,860px)!important;max-height:94vh}
+.setup-cols{display:flex;gap:12px;align-items:stretch}
+.setup-cols>.setup-pane{flex:1 1 0;min-width:0;background:#071525;border:1px solid #1a3a5c;border-radius:8px;padding:8px 10px}
+.setup-h{font-size:12px;color:#f4a460;font-weight:700;border-bottom:1px solid #1a3a5c;padding-bottom:5px;margin-bottom:4px}
+.setup-item{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;padding:5px 0;border-bottom:1px solid #0d2035}
+.setup-item:last-child{border-bottom:none}
+.setup-item label{color:#c8dff0;white-space:nowrap}
+.setup-item select{background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:4px 6px;border-radius:5px;font-size:12px;max-width:58%}
+@media(max-width:700px){.setup-cols{flex-direction:column}.setup-modal{max-height:92vh;overflow-y:auto}}
+.setup-row{display:flex;align-items:center;gap:7px;margin-bottom:6px;padding:6px 7px;background:#0a1e30;border-radius:8px;border:1px solid #1a3a5c}
 .setup-row input[type=text]{background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:6px 10px;border-radius:5px;font-size:13px;flex:1}
 .swatch{width:24px;height:24px;border-radius:50%;border:3px solid rgba(255,255,255,.3);flex-shrink:0}
 .ai-chk{display:flex;align-items:center;gap:5px;font-size:12px;color:#c8aae8;cursor:pointer;white-space:nowrap}
@@ -291,7 +301,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
           <select id="net-vpwin" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px"></select>
           <label style="color:#f4a460">📣 勝利宣言:</label>
           <select id="net-declare" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px">
-            <option value="on" selected>あり</option><option value="off">なし（自動）</option>
+            <option value="off" selected>なし（自動）</option><option value="on">あり</option>
           </select>
           <label style="color:#f4a460">🎲 サイコロ演出:</label>
           <select id="net-dicefx" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px">
@@ -307,68 +317,52 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 
 <!-- Setup Modal -->
 <div class="ov hidden" id="setup-ov">
-  <div class="modal">
+  <div class="modal setup-modal">
     <h3>🏝 カタン 6人対戦 — ゲーム設定</h3>
-    <div style="margin-bottom:10px;display:flex;align-items:center;gap:12px;font-size:13px;flex-wrap:wrap">
-      <label>プレイヤー数:</label>
-      <select id="num-players" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:6px 10px;border-radius:5px;font-size:13px">
-        <option value="2">2人</option><option value="3">3人</option><option value="4">4人</option>
-        <option value="5">5人</option><option value="6" selected>6人</option>
-      </select>
+    <div class="setup-cols">
+      <!-- 左: ゲーム設定 -->
+      <div class="setup-pane">
+        <div class="setup-h">⚙️ ゲーム設定</div>
+        <div class="setup-item"><label>👥 プレイヤー数</label>
+          <select id="num-players">
+            <option value="2">2人</option><option value="3">3人</option><option value="4">4人</option>
+            <option value="5">5人</option><option value="6" selected>6人</option>
+          </select></div>
+        <div class="setup-item"><label>⚡ CPUスピード</label>
+          <select id="ai-speed">
+            <option value="1800">遅い</option><option value="1100">普通</option><option value="450" selected>速い</option>
+          </select></div>
+        <div class="setup-item"><label>🧠 CPU強さ</label>
+          <select id="ai-difficulty">
+            <option value="easy">弱い</option><option value="normal">普通</option><option value="hard" selected>強い</option>
+          </select></div>
+        <div class="setup-item"><label>🏦 銀行の残量</label>
+          <select id="bank-view-sel">
+            <option value="gauge" selected>📊 ゲージ</option><option value="num">🔢 正確な枚数</option>
+          </select></div>
+        <div class="setup-item"><label>🃏 相手の資源</label>
+          <select id="openhands-sel">
+            <option value="off" selected>🔒 非公開</option><option value="on">🔓 公開</option>
+          </select></div>
+        <div class="setup-item"><label>🏆 勝利点</label>
+          <select id="vpwin-sel"></select></div>
+        <div class="setup-item"><label>📣 勝利宣言</label>
+          <select id="declare-sel">
+            <option value="off" selected>なし（自動で勝利）</option>
+            <option value="on">あり（自分で宣言）</option>
+          </select></div>
+        <div class="setup-item"><label>🎲 サイコロ演出</label>
+          <select id="dicefx-sel">
+            <option value="on" selected>あり</option><option value="off">なし</option>
+          </select></div>
+      </div>
+      <!-- 右: プレイヤー -->
+      <div class="setup-pane">
+        <div class="setup-h">🎨 プレイヤー <span style="font-weight:400;color:#8aaac0;font-size:10px">AIにチェックでCPU操作</span></div>
+        <div id="player-setup-rows"></div>
+      </div>
     </div>
-    <div style="margin-bottom:14px;display:flex;align-items:center;gap:16px;font-size:13px;flex-wrap:wrap;background:#071525;padding:10px;border-radius:8px;border:1px solid #1a3a5c">
-      <div style="display:flex;align-items:center;gap:8px">
-        <label style="color:#f4a460;font-weight:700">⚡ CPUスピード:</label>
-        <select id="ai-speed" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px">
-          <option value="1800">遅い</option>
-          <option value="1100">普通</option>
-          <option value="450" selected>速い</option>
-        </select>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <label style="color:#f4a460;font-weight:700">🧠 CPU強さ:</label>
-        <select id="ai-difficulty" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px">
-          <option value="easy">弱い</option>
-          <option value="normal">普通</option>
-          <option value="hard" selected>強い</option>
-        </select>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <label style="color:#f4a460;font-weight:700">🏦 銀行の残量:</label>
-        <select id="bank-view-sel" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px">
-          <option value="gauge" selected>📊 ゲージ（枚数を隠す）</option>
-          <option value="num">🔢 正確な枚数</option>
-        </select>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <label style="color:#f4a460;font-weight:700">🃏 相手の資源:</label>
-        <select id="openhands-sel" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px">
-          <option value="off" selected>🔒 非公開（枚数のみ）</option>
-          <option value="on">🔓 公開（内訳も見える）</option>
-        </select>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <label style="color:#f4a460;font-weight:700">🏆 勝利点:</label>
-        <select id="vpwin-sel" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px"></select>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <label style="color:#f4a460;font-weight:700">📣 勝利宣言:</label>
-        <select id="declare-sel" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px">
-          <option value="on" selected>あり（自分で宣言）</option>
-          <option value="off">なし（自動で勝利）</option>
-        </select>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <label style="color:#f4a460;font-weight:700">🎲 サイコロ演出:</label>
-        <select id="dicefx-sel" style="background:#1c3d5a;border:1px solid #2e5a80;color:#e8e8e8;padding:5px 8px;border-radius:5px;font-size:12px">
-          <option value="on" selected>あり（画面中央で回す）</option>
-          <option value="off">なし（結果のみ）</option>
-        </select>
-      </div>
-      <span style="font-size:11px;color:#8aaac0">AIにチェックを入れるとCPUが操作します</span>
-    </div>
-    <div id="player-setup-rows"></div>
-    <div class="modal-btns"><button class="btn-p" style="font-size:15px;padding:10px 24px" onclick="startGame()">🚀 ゲーム開始</button></div>
+    <div class="modal-btns" style="justify-content:center"><button class="btn-p" style="font-size:15px;padding:10px 28px" onclick="startGame()">🚀 ゲーム開始</button></div>
   </div>
 </div>
 
@@ -713,7 +707,7 @@ function initGame(playerDefs){
     aiActionCount:0,
     nextActiveCur:1,showOppRes:false,highlightTiles:[],
     difficulty:'normal',autoPassSB:'off',bankView:'gauge',
-    vpWin:VP_WIN_DEFAULT,declareWin:'on',diceFx:'on',showCosts:true,openHands:'off',
+    vpWin:VP_WIN_DEFAULT,declareWin:'off',diceFx:'on',showCosts:true,openHands:'off',
     _undoSnapshot:null,_tradeOpen:false,diceLog:[],robberBlockedTiles:[],_diceRoller:null,_popupCount:0,_roadBuilderAI:new Set()
   };
   G._defKeys=defKeys;
@@ -3783,7 +3777,7 @@ function startGame(){
   G.difficulty=window._pendingDifficulty||'normal';
   G.bankView=document.getElementById('bank-view-sel')?.value||'gauge';
   G.vpWin=parseInt(document.getElementById('vpwin-sel')?.value)||VP_WIN_DEFAULT;
-  G.declareWin=document.getElementById('declare-sel')?.value||'on';
+  G.declareWin=document.getElementById('declare-sel')?.value||'off';
   G.diceFx=document.getElementById('dicefx-sel')?.value||'on';
   G.openHands=document.getElementById('openhands-sel')?.value||'off';
   G.showOppRes=G.openHands==='on';
@@ -4769,7 +4763,7 @@ function netStartGame(){
   G.difficulty=diff;
   G.bankView=document.getElementById('net-bank-view')?.value||'gauge';
   G.vpWin=parseInt(document.getElementById('net-vpwin')?.value)||VP_WIN_DEFAULT;
-  G.declareWin=document.getElementById('net-declare')?.value||'on';
+  G.declareWin=document.getElementById('net-declare')?.value||'off';
   G.diceFx=document.getElementById('net-dicefx')?.value||'on';
   G.openHands=document.getElementById('net-openhands')?.value||'off';
   G.showOppRes=G.openHands==='on';
