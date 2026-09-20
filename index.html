@@ -2315,7 +2315,7 @@ function showUnifiedReactModal(){
   const proposer=G.players[pendingTrade.proposer];
   const gsChips=resEntriesToChips(pendingTrade.give);
   const wsChips=resEntriesToChips(pendingTrade.want);
-  const propVP=proposer.vp+proposer.vpCards;
+  const propVP=shownVP(proposer);
   document.getElementById('ptrade-react-proposal').innerHTML=
     `<div style="margin-bottom:6px"><strong style="color:${proposer.color}">${proposer.isAI?'🤖':'👤'} ${proposer.name}</strong> <span style="color:#f4d060;font-size:12px;font-weight:700">⭐${propVP}VP</span> からの提案:</div>`+
     `<div style="margin-bottom:5px"><span style="color:#ffaaaa;font-size:12px;font-weight:700">📤 あなたが渡すもの:</span><br><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px">${wsChips}</div></div>`+
@@ -2329,7 +2329,7 @@ function showUnifiedReactModal(){
   // AI / auto-answered → scrollable list; pending humans → sticky footer
   const allRespondents=G.players.filter(op=>op.id!==pendingTrade.proposer);
   for(const op of allRespondents){
-    const vp=op.vp+op.vpCards;
+    const vp=shownVP(op);
     const ca=Object.entries(pendingTrade.want).every(([r,n])=>op.resources[r]>=n);
     const row=document.createElement('div');
     row.id=`react-row-${op.id}`;
@@ -2378,7 +2378,7 @@ function humanReactUnified(pid,yes){
   pendingTrade.humanVoluntaryReacted=true;
   G._pendingHumanReacts.delete(pid);
   const op=G.players[pid];
-  const vp=op.vp+op.vpCards;
+  const vp=shownVP(op);
   const row=document.getElementById(`react-row-${pid}`);
   if(row){
     row.style.border=`1px solid ${yes?'#20a060':'#802020'}`;
@@ -2400,7 +2400,7 @@ function humanReactRedo(pid){
   G._pendingHumanReacts.add(pid);
   stopTradeTimer();
   const op=G.players[pid];
-  const vp=op.vp+op.vpCards;
+  const vp=shownVP(op);
   const ca=Object.entries(pendingTrade.want).every(([r,n])=>op.resources[r]>=n);
   const row=document.getElementById(`react-row-${pid}`);
   if(row){
@@ -2434,7 +2434,7 @@ function showTradeReactionResults(){
     const gsChips2=resEntriesToChips(pendingTrade.give);
     const wsChips2=resEntriesToChips(pendingTrade.want);
     propEl.style.display='block';
-    const propResVP=proposer.vp+proposer.vpCards;
+    const propResVP=shownVP(proposer);
     propEl.innerHTML=`<div style="margin-bottom:6px"><strong style="color:${proposer.color}">${proposer.isAI?'🤖':'👤'} ${proposer.name}</strong> <span style="color:#f4d060;font-size:12px;font-weight:700">⭐${propResVP}VP</span> の提案内容:</div>`+
       `<div style="display:flex;gap:16px;flex-wrap:wrap">`+
       `<div><span style="color:#aaffaa;font-size:12px;font-weight:700">📤 渡す:</span><br><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px">${gsChips2}</div></div>`+
@@ -2453,7 +2453,7 @@ function showTradeReactionResults(){
     const row=document.createElement('div');
     row.style.cssText=`display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;margin-bottom:5px;`+
       `background:${yes?'rgba(0,180,80,.13)':'rgba(160,0,0,.1)'};border:1px solid ${yes?'#20a060':'#802020'}`;
-    const vp2=op.vp+op.vpCards;
+    const vp2=shownVP(op);
     row.innerHTML=`<span style="color:${op.color};flex:1">${op.isAI?'🤖':'👤'} ${op.name}</span>`+
       `<span style="color:#f4d060;font-size:11px;margin-right:6px">⭐${vp2}</span>`+
       `<span style="font-size:22px;font-weight:900;line-height:1">${yes?'⭕':'❌'}</span>`;
@@ -2664,16 +2664,16 @@ function aiScarcity(p,res){
 // 相手の危険度 0〜1。VP・特別賞・伏せ発展カード・手札・盤面の強さから判断する
 function aiThreat(op){
   if(!op)return 0;
-  const vpTotal=op.vp+op.vpCards;
-  let t=vpTotal/Math.max(5,vpWin()); // 勝利点の進み具合が主軸
+  // 伏せ札の中身は覗かず、盤面に見えている勝利点だけを使う
+  let t=op.vp/Math.max(5,vpWin()); // 勝利点の進み具合が主軸
   // 特別賞を持っている、または奪える距離にいる
   if(G.largestArmy===op.id)t+=0.10;
   else if(op.knights>=G.largestArmySize-1)t+=0.06;
   if(G.longestRoad===op.id)t+=0.10;
   else if(computeRoadLen(op.id)>=G.longestRoadSize-1)t+=0.06;
-  // 伏せたままの発展カード（勝利点が隠れている可能性）
-  const hidden=op.devCards.filter(c=>!c.played&&c.type!=='knight').length;
-  t+=Math.min(0.18,hidden*0.06);
+  // 伏せたままの発展カード枚数（中身は見ずに「隠し勝利点かも」と警戒する）
+  const hidden=op.devCards.filter(c=>!c.played).length;
+  t+=Math.min(0.20,hidden*0.06);
   // 手札が厚い＝すぐ建設できる
   t+=Math.min(0.10,sum(op.resources)*0.012);
   // 盤面の生産力
@@ -3461,7 +3461,7 @@ function renderTurnOrder(elId){
     h+=`<span class="turn-chip${isSecond?' now':''}">`+
       `<span class="tc-n">${isSecond?'2番手':i}</span>`+
       `<span style="color:${p.color};font-weight:700">${escapeHtml(p.name)}${meMark}</span>`+
-      `<span style="color:#f4d060;font-size:10px">⭐${p.vp+p.vpCards}</span></span>`;
+      `<span style="color:#f4d060;font-size:10px">⭐${shownVP(p)}</span></span>`;
   }
   el.innerHTML=h;
 }
@@ -3511,10 +3511,11 @@ function makePlayerCard(p){
   d.style.borderColor=p.color;
   d.dataset.pid=p.id;
   const tot=sum(p.resources);
-  const totalVP=p.vp+p.vpCards;
-  const devCount=p.devCards.filter(c=>!c.played&&c.type!=='vp').length;
-  // 自分は常に表示。相手は「公開」設定のときだけ内訳を見せる
-  const isSelf=isMe(p.id);
+  const totalVP=shownVP(p);
+  // 自分は勝利点カードを別枠(⭐)で出すので📜から除く。相手は伏せ札の枚数だけ見える
+  const isSelf=isMe(p.id)||G.winner!==-1;
+  const devCount=isSelf?p.devCards.filter(c=>!c.played&&c.type!=='vp').length
+                       :p.devCards.filter(c=>!c.played).length;
   const showRes=isSelf||G.openHands==='on'||(!NET.on&&G.showOppRes);
   let resHtml='';
   if(showRes){
@@ -3524,7 +3525,8 @@ function makePlayerCard(p){
     if(p.resources.wheat)resHtml+='<span class="chip rq">🌾'+p.resources.wheat+'</span>';
     if(p.resources.ore)resHtml+='<span class="chip ro">⛏️'+p.resources.ore+'</span>';
     if(devCount)resHtml+='<span class="chip rd">📜'+devCount+'</span>';
-    if(p.vpCards)resHtml+='<span class="chip rk">⭐'+p.vpCards+'</span>';
+    // 勝利点カードは伏せ札。資源を公開設定にしても本人以外には見せない
+    if(isSelf&&p.vpCards)resHtml+='<span class="chip rk">⭐'+p.vpCards+'</span>';
   } else {
     resHtml='<span class="chip" style="background:#1c3d5a;color:#8aaac0">🃏 '+tot+'枚</span>';
     if(devCount)resHtml+='<span class="chip rd">📜'+devCount+'</span>';
@@ -3805,6 +3807,8 @@ const NET={
 };
 // 「この画面のプレイヤーか」判定（オフラインでは従来どおり人間全員）
 function isMe(pid){return NET.on?pid===NET.myPid:!isAI(pid);}
+// 画面に出してよい勝利点。発展カードの勝利点は伏せ札なので、本人と決着後だけ合算する
+function shownVP(p){return (!p)?0:((isMe(p.id)||G.winner!==-1)?p.vp+p.vpCards:p.vp);}
 // 7文字（約170億通り）— 総当たりで空きルームを探されないようにする
 function genCode(){
   const A='ACDEFGHJKLMNPRSTUVWXYZ2345679';
@@ -3827,12 +3831,13 @@ function serializeState(forPid){
   g._undoSnapshot=G._undoSnapshot?1:null;
   g.devDeck=G.devDeck.map(()=>'?'); // 山札の中身はゲストに送らない
   const openHands=G.openHands==='on';
+  const reveal=G.winner!==-1; // 決着後は全員の内容を明かす
   g.players=G.players.map(p=>{
-    if(p.id===forPid)return {...p,resources:{...p.resources},devCards:p.devCards.map(c=>({...c}))};
-    // 他人: 発展カードの種類は常に伏せる。資源は「公開」設定のときだけ内訳を送る
+    if(p.id===forPid||reveal)return {...p,resources:{...p.resources},devCards:p.devCards.map(c=>({...c}))};
+    // 他人: 発展カードは種類も勝利点枚数も伏せる。資源は「公開」設定のときだけ内訳を送る
     const res=openHands?{...p.resources}:{wood:0,brick:0,sheep:0,wheat:0,ore:0,_hidden:sum(p.resources)};
-    return {...p,resources:res,
-      devCards:p.devCards.map(c=>({type:c.type==='vp'?'vp':'?',played:c.played,newThisTurn:false}))};
+    return {...p,resources:res,vpCards:0,
+      devCards:p.devCards.map(c=>({type:'?',played:c.played,newThisTurn:false}))};
   });
   return {g,b:board,R,status:document.getElementById('status').textContent};
 }
@@ -4232,7 +4237,7 @@ function netRenderReact(trade,secs){
   const proposer=G.players[trade.proposer];
   const gsChips=resEntriesToChips(trade.give);
   const wsChips=resEntriesToChips(trade.want);
-  const propVP=proposer.vp+proposer.vpCards;
+  const propVP=shownVP(proposer);
   document.getElementById('ptrade-react-proposal').innerHTML=
     `<div style="margin-bottom:6px"><strong style="color:${proposer.color}">${proposer.isAI?'🤖':'👤'} ${proposer.name}</strong> <span style="color:#f4d060;font-size:12px;font-weight:700">⭐${propVP}VP</span> からの提案:</div>`+
     `<div style="margin-bottom:5px"><span style="color:#ffaaaa;font-size:12px;font-weight:700">📤 あなたが渡すもの:</span><br><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px">${wsChips}</div></div>`+
@@ -4243,7 +4248,7 @@ function netRenderReact(trade,secs){
   playersEl.innerHTML='';humanFooter.innerHTML='';humanLabel.style.display='none';
   for(const op of G.players){
     if(op.id===trade.proposer)continue;
-    const vp=op.vp+op.vpCards;
+    const vp=shownVP(op);
     const answered=trade.reactions.hasOwnProperty(op.id);
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid #1a3a5c;background:#071525';
@@ -4292,7 +4297,7 @@ function netRenderResult(trade,secs){
   const proposer=G.players[trade.proposer];
   const propEl=document.getElementById('ptrade-result-proposal');
   const gsChips2=resEntriesToChips(trade.give),wsChips2=resEntriesToChips(trade.want);
-  const propResVP=proposer.vp+proposer.vpCards;
+  const propResVP=shownVP(proposer);
   propEl.style.display='block';
   propEl.innerHTML=`<div style="margin-bottom:6px"><strong style="color:${proposer.color}">${proposer.isAI?'🤖':'👤'} ${proposer.name}</strong> <span style="color:#f4d060;font-size:12px;font-weight:700">⭐${propResVP}VP</span> の提案内容:</div>`+
     `<div style="display:flex;gap:16px;flex-wrap:wrap">`+
@@ -4312,7 +4317,7 @@ function netRenderResult(trade,secs){
     const row=document.createElement('div');
     row.style.cssText=`display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;margin-bottom:5px;`+
       `background:${yes?'rgba(0,180,80,.13)':'rgba(160,0,0,.1)'};border:1px solid ${yes?'#20a060':'#802020'}`;
-    const vp2=op.vp+op.vpCards;
+    const vp2=shownVP(op);
     row.innerHTML=`<span style="color:${op.color};flex:1">${op.isAI?'🤖':'👤'} ${op.name}</span>`+
       `<span style="color:#f4d060;font-size:11px;margin-right:6px">⭐${vp2}</span>`+
       `<span style="font-size:22px;font-weight:900;line-height:1">${yes?'⭕':'❌'}</span>`;
