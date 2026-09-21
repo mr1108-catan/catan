@@ -305,6 +305,14 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
               <select id="net-ai-diff">
                 <option value="easy">弱い</option><option value="normal">普通</option><option value="hard" selected>強い</option>
               </select></div>
+            <div class="setup-item"><label>🗺 資源の生産力</label>
+              <select id="net-board-balance">
+                <option value="random" selected>🎲 ランダム</option><option value="even">⚖️ 均等にする</option>
+              </select></div>
+            <div class="setup-item"><label>🔢 数字チップ</label>
+              <select id="net-board-numbers">
+                <option value="random" selected>🎲 ランダム</option><option value="spiral">📖 実際の組み方</option>
+              </select></div>
             <div class="setup-item"><label>🏦 銀行の残量</label>
               <select id="net-bank-view">
                 <option value="gauge" selected>📊 ゲージ</option><option value="num">🔢 正確な枚数</option>
@@ -352,6 +360,14 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
         <div class="setup-item"><label>🧠 CPU強さ</label>
           <select id="ai-difficulty">
             <option value="easy">弱い</option><option value="normal">普通</option><option value="hard" selected>強い</option>
+          </select></div>
+        <div class="setup-item"><label>🗺 資源の生産力</label>
+          <select id="board-balance-sel">
+            <option value="random" selected>🎲 ランダム</option><option value="even">⚖️ 均等にする</option>
+          </select></div>
+        <div class="setup-item"><label>🔢 数字チップ</label>
+          <select id="board-numbers-sel">
+            <option value="random" selected>🎲 ランダム</option><option value="spiral">📖 実際の組み方</option>
           </select></div>
         <div class="setup-item"><label>🏦 銀行の残量</label>
           <select id="bank-view-sel">
@@ -580,6 +596,116 @@ function checkAI(){
 let board={hexes:[],vertices:[],edges:[]};
 let G={players:[],cur:0,winner:-1};
 
+// 盤面生成のオプション（開始前画面で選ぶ。initGame より前に設定する）
+let BOARD_OPT={balance:'random',numbers:'random'};
+// 公式の5〜6人用チップ配置順（A〜b の28枚）
+const SPIRAL_TOKENS=[2,5,4,6,3,9,8,11,11,10,6,3,8,4,8,10,11,12,10,5,4,9,5,9,12,3,2,6];
+function _hexAdjacent(a,b){
+  return (a.row===b.row&&Math.abs(a.col-b.col)===2)||
+         (Math.abs(a.row-b.row)===1&&Math.abs(a.col-b.col)===1);
+}
+// 外周から内側へ「渦巻き」の順に並べる（開始する角と回る向きは指定できる）
+function _spiralOrder(hexes,startAngle,dir){
+  const cx=hexes.reduce((s,h)=>s+h.cx,0)/hexes.length;
+  const cy=hexes.reduce((s,h)=>s+h.cy,0)/hexes.length;
+  const remaining=new Set(hexes.map(h=>h.id));
+  const order=[];
+  while(remaining.size){
+    // いま残っている中で外周にあたるタイル（隣が6つ揃っていないもの）
+    const layer=[...remaining].filter(id=>{
+      let cnt=0;
+      for(const oid of remaining)if(oid!==id&&_hexAdjacent(hexes[id],hexes[oid]))cnt++;
+      return cnt<6;
+    });
+    if(!layer.length){order.push(...remaining);break;}
+    layer.sort((a,b)=>{
+      const ka=_spiralKey(hexes[a],cx,cy,startAngle,dir);
+      const kb=_spiralKey(hexes[b],cx,cy,startAngle,dir);
+      return ka-kb;
+    });
+    order.push(...layer);
+    for(const id of layer)remaining.delete(id);
+  }
+  return order.map(id=>hexes[id]);
+}
+function _spiralKey(h,cx,cy,startAngle,dir){
+  let a=Math.atan2(h.cy-cy,h.cx-cx)*dir-startAngle;
+  const TAU=Math.PI*2;
+  a=((a%TAU)+TAU)%TAU;
+  return a;
+}
+// 公式順で渦巻き配置し、6/8や同じ数字が隣り合わない配置になるまで開始角を変えて試す
+function _placeNumbersSpiral(hexes,hexAdj){
+  const HARD={6:[6,8],8:[6,8]};
+  const starts=[-3,-2,-1,0,1,2].map(k=>k*Math.PI/3+Math.PI/6);
+  for(const dir of[1,-1]){
+    for(const st of starts){
+      const order=_spiralOrder(hexes,st,dir);
+      let i=0;
+      for(const h of order)h.num=(h.res==='desert')?null:SPIRAL_TOKENS[i++];
+      let ok=true;
+      for(const h of hexes){
+        if(!h.num)continue;
+        const banned=[h.num,...(HARD[h.num]||[])];
+        for(const nid of(hexAdj.get(h.id)||[])){
+          if(hexes[nid].num&&banned.includes(hexes[nid].num)){ok=false;break;}
+        }
+        if(!ok)break;
+      }
+      if(ok)return true;
+    }
+  }
+  return false; // どの角からでも成立しない場合はランダム配置に任せる
+}
+// 各資源の生産力（出目確率の合計）が均等になるよう、資源の置き場所を入れ替える
+function balanceResources(hexes){
+  const pool=hexes.filter(h=>h.res!=='desert'&&h.num);
+  const pip=h=>PROB[h.num]||0;
+  const totals=()=>{
+    const t={};for(const r of RES)t[r]=0;
+    for(const h of pool)t[h.res]+=pip(h);
+    return t;
+  };
+  const spread=t=>Math.max(...RES.map(r=>t[r]))-Math.min(...RES.map(r=>t[r]));
+  let cur=spread(totals());
+  // 1手入れ替えで詰めきれない場合があるので、少し戻してから再挑戦する
+  for(let restart=0;restart<40&&cur>2;restart++){
+    for(let pass=0;pass<200&&cur>2;pass++){
+      let moved=false;
+      for(let i=0;i<pool.length&&!moved;i++)for(let j=i+1;j<pool.length;j++){
+        if(pool[i].res===pool[j].res)continue;
+        const a=pool[i].res,b=pool[j].res;
+        pool[i].res=b;pool[j].res=a;
+        const s=spread(totals());
+        if(s<=cur){cur=s;moved=true;break;}
+        pool[i].res=a;pool[j].res=b;
+      }
+      if(!moved)break;
+    }
+    if(cur>2){ // 行き詰まったら2か所だけ入れ替えて別の並びから探し直す
+      for(let k=0;k<2;k++){
+        const i=0|Math.random()*pool.length,j=0|Math.random()*pool.length;
+        const t=pool[i].res;pool[i].res=pool[j].res;pool[j].res=t;
+      }
+      cur=spread(totals());
+    }
+  }
+  for(let pass=0;pass<600&&cur>1;pass++){
+    let improved=false;
+    for(let i=0;i<pool.length&&!improved;i++){
+      for(let j=i+1;j<pool.length;j++){
+        if(pool[i].res===pool[j].res)continue;
+        const a=pool[i].res,b=pool[j].res;
+        pool[i].res=b;pool[j].res=a;
+        const s=spread(totals());
+        if(s<cur){cur=s;improved=true;break;}
+        pool[i].res=a;pool[j].res=b; // 戻す
+      }
+    }
+    if(!improved)break;
+  }
+  return cur;
+}
 function buildBoard(){
   const tiles=[];
   for(const[r,c]of Object.entries(TILE_DIST))for(let i=0;i<c;i++)tiles.push(r);
@@ -634,6 +760,8 @@ function buildBoard(){
   const nonDesert=hexes.filter(h=>h.res!=='desert');
   const numPool=[...NUM_TOKENS];
   let assigned=false;
+  // 「実際の組み方」: 角から渦巻き状に、公式の順番どおりにチップを置く
+  if(BOARD_OPT.numbers==='spiral'&&_placeNumbersSpiral(hexes,hexAdj))assigned=true;
   // Hard: 6/8 avoid each other; all numbers avoid same-number adjacency
   const HARD_PAIRS={6:[6,8],8:[6,8]};
   for(let attempt=0;attempt<18000&&!assigned;attempt++){
@@ -661,6 +789,12 @@ function buildBoard(){
     }
     if(!soft212||attempt>15000)assigned=true;
   }
+
+  // 「生産力を均等に」設定なら、数字が決まった後に資源の置き場所を調整する
+  if(BOARD_OPT.balance==='even')balanceResources(hexes);
+  // 砂漠の位置は資源入れ替えの対象外なので、山賊の初期位置を取り直す
+  for(const h of hexes)h.hasRobber=(h.res==='desert');
+  if(!hexes.some(h=>h.hasRobber)){const d=hexes.find(h=>!h.num);if(d)d.hasRobber=true;}
 
   // Ports
   const border=edges.filter(e=>e.hexes.length===1);
@@ -1481,8 +1615,15 @@ function activateRobber(hid){
   }
   if(candidates.size>0){
     if(isAI(G.cur)){
-      const richest=[...candidates].reduce((a,b)=>sum(G.players[a].resources)>=sum(G.players[b].resources)?a:b);
-      stealFrom(richest);
+      // 中盤以降は首位から優先して奪う（同格なら手札の多い相手）
+      const arr=[...candidates];
+      const topVP=Math.max(...arr.map(pid=>G.players[pid].vp));
+      const leaders=arr.filter(pid=>topVP>0&&G.players[pid].vp>=topVP);
+      // 首位が勝利点の半分に達したら（＝中盤以降）、手札の多さより首位潰しを優先する
+      const midGame=topVP>=Math.max(4,Math.ceil(vpWin()*0.5));
+      const pool=(midGame&&leaders.length)?leaders:arr;
+      const pick=pool.reduce((a,b)=>sum(G.players[a].resources)>=sum(G.players[b].resources)?a:b);
+      stealFrom(pick);
     } else if(isMe(G.cur)) showStealModal([...candidates]);
     else{
       setStatus(`${G.players[G.cur].name} — 盗む相手を選んでいます...`);updateUI();render();
@@ -3056,6 +3197,12 @@ function aiUseDevCard(p){
                   diff==='normal'?(robberOnOurHex?0.6:0.25):0;
     // 最大騎士力を狙う方針なら、積極的に騎士を切って数を伸ばす
     if(diff!=='easy'&&aiStrategy(p).plan==='army')useChance=Math.min(0.95,useChance+0.4);
+    // 首位が勝利圏に近づいているときは、騎士を切って山賊で止めにいく
+    if(diff!=='easy'){
+      const topOther=Math.max(0,...G.players.filter(x=>x.id!==p.id).map(x=>x.vp));
+      // 中盤（首位が勝利点の半分）以降、首位が自分より上なら騎士を切って止めにいく
+      if(topOther>p.vp&&topOther>=Math.max(4,Math.ceil(vpWin()*0.5)))useChance=Math.min(0.95,useChance+0.35);
+    }
     if(Math.random()<useChance){
       knight.played=true;G.devPlayedThisTurn=true;p.knights++;
       updateLargestArmy();
@@ -3417,21 +3564,28 @@ function aiMoveRobber(){
   const me=G.players[G.cur];
   const target=aiBuildTarget(me);
   const needed=target?COST[target]:{};
-  let bestHex=-1,bestScore=-1;
+  // 盤面に見えている勝利点で首位を特定し、中盤以降はそこを止めることを最優先にする
+  const others=G.players.filter(p=>p.id!==G.cur);
+  const topVP=others.length?Math.max(...others.map(p=>p.vp)):0;
+  const leaderBoost=1+aiEndgamePressure()*5+((G.difficulty||'normal')==='hard'?1.2:0.5);
+  let bestHex=-1,bestScore=-1e9;
   for(const h of board.hexes){
     if(h.hasRobber)continue;
     const prob=(PROB[h.num]||0)/36;
     let hexScore=0;
     for(const vid of h.vertices){
       const v=board.vertices[vid];
-      if(!v.building||v.player===G.cur)continue;
-      const op=G.players[v.player];
-      const opVP=op.vp+op.vpCards;           // 高得点ほど優先
+      if(!v.building)continue;
       const bw=v.building==='city'?2:1;
-      hexScore+=opVP*bw*prob*10;
+      // 自分の土地は塞がない
+      if(v.player===G.cur){hexScore-=prob*bw*26;continue;}
+      const op=G.players[v.player];
+      const isLeader=topVP>0&&op.vp>=topVP;
+      let w=1+op.vp*0.6;
+      if(isLeader)w*=leaderBoost;      // 首位は重点的に妨害する
+      hexScore+=w*bw*prob*24;
       // 同点タイブレーク：AIが欲しい資源を相手が持っていればボーナス
-      const hasWanted=Object.keys(needed).some(r=>(op.resources[r]||0)>0);
-      if(hasWanted)hexScore+=opVP*0.5;
+      if(Object.keys(needed).some(r=>(op.resources[r]||0)>0))hexScore+=op.vp*0.4;
     }
     if(hexScore>bestScore){bestScore=hexScore;bestHex=h.id;}
   }
@@ -3818,7 +3972,11 @@ function startGame(){
   canvas.style.transform='';canvas.style.marginBottom='';
   // Shift board downward within #mid
   canvas.style.marginTop='36px';
+  // 盤面オプションは initGame（=盤面生成）より前に決めておく必要がある
+  BOARD_OPT={balance:document.getElementById('board-balance-sel')?.value||'random',
+             numbers:document.getElementById('board-numbers-sel')?.value||'random'};
   initGame(defs);
+  G.boardOpt={...BOARD_OPT};
   G.difficulty=window._pendingDifficulty||'normal';
   G.bankView=document.getElementById('bank-view-sel')?.value||'gauge';
   G.vpWin=parseInt(document.getElementById('vpwin-sel')?.value)||VP_WIN_DEFAULT;
@@ -4804,7 +4962,10 @@ function netStartGame(){
   canvas.width=Math.round(12*W2+130);canvas.height=Math.round(12*R+130);
   canvas.style.transform='';canvas.style.marginBottom='';canvas.style.marginTop='36px';
   NET.started=true;
+  BOARD_OPT={balance:document.getElementById('net-board-balance')?.value||'random',
+             numbers:document.getElementById('net-board-numbers')?.value||'random'};
   initGame(defs);
+  G.boardOpt={...BOARD_OPT};
   G.difficulty=diff;
   G.bankView=document.getElementById('net-bank-view')?.value||'gauge';
   G.vpWin=parseInt(document.getElementById('net-vpwin')?.value)||VP_WIN_DEFAULT;
