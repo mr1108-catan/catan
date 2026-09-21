@@ -311,7 +311,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
               </select></div>
             <div class="setup-item"><label>🔢 数字チップ</label>
               <select id="net-board-numbers">
-                <option value="random" selected>🎲 ランダム</option><option value="spiral">📖 実際の組み方</option>
+                <option value="spiral" selected>📖 実際の組み方</option><option value="random">🎲 ランダム</option>
               </select></div>
             <div class="setup-item"><label>🏦 銀行の残量</label>
               <select id="net-bank-view">
@@ -367,7 +367,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
           </select></div>
         <div class="setup-item"><label>🔢 数字チップ</label>
           <select id="board-numbers-sel">
-            <option value="random" selected>🎲 ランダム</option><option value="spiral">📖 実際の組み方</option>
+            <option value="spiral" selected>📖 実際の組み方</option><option value="random">🎲 ランダム</option>
           </select></div>
         <div class="setup-item"><label>🏦 銀行の残量</label>
           <select id="bank-view-sel">
@@ -597,9 +597,9 @@ let board={hexes:[],vertices:[],edges:[]};
 let G={players:[],cur:0,winner:-1};
 
 // 盤面生成のオプション（開始前画面で選ぶ。initGame より前に設定する）
-let BOARD_OPT={balance:'random',numbers:'random'};
-// 公式の5〜6人用チップ配置順（A〜b の28枚）
-const SPIRAL_TOKENS=[2,5,4,6,3,9,8,11,11,10,6,3,8,4,8,10,11,12,10,5,4,9,5,9,12,3,2,6];
+let BOARD_OPT={balance:'random',numbers:'spiral'};
+// 公式の5〜6人用チップ配置順（A〜b の28枚。実物のチップ順どおり）
+const SPIRAL_TOKENS=[2,5,4,6,3,9,8,3,11,10,6,11,8,4,8,10,11,12,10,5,4,9,5,9,12,3,2,6];
 function _hexAdjacent(a,b){
   return (a.row===b.row&&Math.abs(a.col-b.col)===2)||
          (Math.abs(a.row-b.row)===1&&Math.abs(a.col-b.col)===1);
@@ -638,7 +638,8 @@ function _spiralKey(h,cx,cy,startAngle,dir){
 function _placeNumbersSpiral(hexes,hexAdj){
   const HARD={6:[6,8],8:[6,8]};
   const starts=[-3,-2,-1,0,1,2].map(k=>k*Math.PI/3+Math.PI/6);
-  for(const dir of[1,-1]){
+  // 実物と同じく「どこかの角を起点に反時計回り」。dir=-1 が反時計回り
+  for(const dir of[-1,1]){
     for(const st of starts){
       const order=_spiralOrder(hexes,st,dir);
       let i=0;
@@ -3974,7 +3975,7 @@ function startGame(){
   canvas.style.marginTop='36px';
   // 盤面オプションは initGame（=盤面生成）より前に決めておく必要がある
   BOARD_OPT={balance:document.getElementById('board-balance-sel')?.value||'random',
-             numbers:document.getElementById('board-numbers-sel')?.value||'random'};
+             numbers:document.getElementById('board-numbers-sel')?.value||'spiral'};
   initGame(defs);
   G.boardOpt={...BOARD_OPT};
   G.difficulty=window._pendingDifficulty||'normal';
@@ -4963,7 +4964,7 @@ function netStartGame(){
   canvas.style.transform='';canvas.style.marginBottom='';canvas.style.marginTop='36px';
   NET.started=true;
   BOARD_OPT={balance:document.getElementById('net-board-balance')?.value||'random',
-             numbers:document.getElementById('net-board-numbers')?.value||'random'};
+             numbers:document.getElementById('net-board-numbers')?.value||'spiral'};
   initGame(defs);
   G.boardOpt={...BOARD_OPT};
   G.difficulty=diff;
