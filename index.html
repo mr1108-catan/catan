@@ -36,7 +36,7 @@ canvas{display:block;position:relative;z-index:1}
 #dice-box{font-size:38px;text-align:center;background:#091a2e;border-radius:10px;padding:6px 4px;border:2px solid #1a3a5c;letter-spacing:2px;line-height:1.2;cursor:default;flex-shrink:0}
 #status{font-size:12px;color:#c8dff0;background:#091a2e;padding:7px 8px;border-radius:7px;border:1px solid #1a3a5c;line-height:1.5;flex-shrink:0}
 #act-btns{display:flex;flex-direction:column;gap:5px}
-#act-btns button{width:100%;text-align:left;padding:11px 10px;font-size:13.5px}
+#act-btns button{width:100%;text-align:left;padding:15px 11px;font-size:14px}
 /* サイコロを振るボタンは押しやすいよう大きめに */
 .btn-roll{padding:20px 10px!important;font-size:17px!important;font-weight:800;text-align:center!important;letter-spacing:1px}
 /* Info panel: bank, awards, log — absolute overlay rightmost */
@@ -189,6 +189,9 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 /* ダイス表示欄 */
 #dice-box .dbox-dice{display:flex;gap:7px;justify-content:center;align-items:center;line-height:0}
 #dice-box .dbox-dice svg{display:block;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+/* 振っている間は結果を出さずに転がす */
+#dice-box .dbox-rolling svg{animation:dfxTumble .28s linear infinite}
+#dice-box .dbox-rolling svg:last-child{animation-direction:reverse;animation-duration:.22s}
 @keyframes dfxTumble{0%{transform:rotate(-16deg) translateY(0) scale(1)}25%{transform:rotate(8deg) translateY(-14px) scale(1.06)}50%{transform:rotate(22deg) translateY(0) scale(1)}75%{transform:rotate(-6deg) translateY(-9px) scale(1.04)}100%{transform:rotate(-16deg) translateY(0) scale(1)}}
 @keyframes dfxLand{0%{transform:scale(1.3) rotate(6deg)}60%{transform:scale(.94) rotate(0)}100%{transform:scale(1) rotate(0)}}
 @keyframes dfxIn{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
@@ -239,10 +242,6 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
       <div id="dice-box">🎲</div>
       <div id="status">ゲームを開始してください</div>
       <div id="act-btns"></div>
-      <div id="sb-setting" style="display:none;margin-top:auto;padding-top:6px;border-top:1px solid rgba(255,255,255,.08)">
-        <div style="font-size:10px;color:#6a8aa0;margin-bottom:4px;letter-spacing:.3px">⚙️ 特別建設フェーズ</div>
-        <button id="autosb-btn" class="btn-s" style="width:100%;font-size:12px;padding:11px 8px" onclick="toggleAutoSB()">🔨 自動スキップ: OFF</button>
-      </div>
     </div>
     <!-- 情報パネル（銀行・特別賞・ログ）-->
     <div id="mid-right">
@@ -1354,11 +1353,11 @@ function rollDice(){
   const total=d1+d2;G.lastRoll=total;G._lastRollTime=Date.now();G._diceRoller=G.cur;
   if(!G.diceLog)G.diceLog=[];
   G.diceLog.push({name:G.players[G.cur].name,d1,d2,total});
-  setDiceBox(d1,d2);
-  addLog(`🎲 ${G.players[G.cur].name}: ${d1}+${d2}=${total}`);
   // 転がる時間は毎回 0.4〜0.9 秒でばらつかせる（演出なしの設定では待たない）
   const spin=G.diceFx==='off'?0:Math.round(400+Math.random()*500);
   G._rolling=true;
+  G._rollD=[d1,d2];               // 結果は目が止まってから出す
+  if(spin)rollingDiceBox();else setDiceBox(d1,d2);
   showDiceAnnounce(d1,d2,total,spin);
   netFx('dice',{d1,d2,total,spin});
   setStatus(`${G.players[G.cur].name} — サイコロを振っています...`);
@@ -1368,6 +1367,12 @@ function rollDice(){
 }
 function resolveRoll(total){
   G._rolling=false;
+  // 目が止まったこのタイミングで、結果欄とログに出目を出す
+  if(G._rollD){
+    const[a,b]=G._rollD;G._rollD=null;
+    setDiceBox(a,b);
+    addLog(`🎲 ${G.players[G.cur].name}: ${a}+${b}=${total}`);
+  }
   if(G.winner!==-1)return;
   if(G.phase!=='main-roll')return;
   if(total===7){handleSeven();return;}
@@ -1455,13 +1460,27 @@ function diceSvg(n,size){
     pips+`</svg>`;
 }
 // ダイス表示欄（操作パネル内）
+let _dboxTimer=null;
+function _stopDiceBoxRoll(){if(_dboxTimer){clearInterval(_dboxTimer);_dboxTimer=null;}}
 function setDiceBox(d1,d2){
+  _stopDiceBoxRoll();
   const el=document.getElementById('dice-box');
   if(el)el.innerHTML=`<span class="dbox-dice">${diceSvg(d1,38)}${diceSvg(d2,38)}</span>`;
 }
 function resetDiceBox(){
+  _stopDiceBoxRoll();
   const el=document.getElementById('dice-box');
   if(el)el.innerHTML='<span style="font-size:34px">🎲</span>';
+}
+// 振っている間は結果を出さず、目がパラパラ変わる表示にする
+function rollingDiceBox(){
+  _stopDiceBoxRoll();
+  const el=document.getElementById('dice-box');
+  if(!el)return;
+  const draw=()=>{el.innerHTML='<span class="dbox-dice dbox-rolling">'+
+    diceSvg(1+(0|Math.random()*6),38)+diceSvg(1+(0|Math.random()*6),38)+'</span>';};
+  draw();
+  _dboxTimer=setInterval(draw,80);
 }
 
 function distributeResources(num){
@@ -2377,32 +2396,7 @@ function nextSpecialBuild(){
   setStatus(`${G.players[G.cur].name} — 特別建設フェーズ（2番手：建設・銀行取引・発展カード可）`);updateUI();render();
   if(isAI(G.cur)){checkAI();}
   else if(!isMe(G.cur)){/* リモートプレイヤー: 本人クライアントの操作を待つ */}
-  else if(G.autoPassSB==='always'){setTimeout(endSpecialBuild,300);}
-  else if(G.autoPassSB==='smart'){
-    const p=G.players[G.cur];
-    const canBuild=['road','settlement','city','devCard'].some(item=>{
-      if(!canAfford(p,item))return false;
-      if(item==='road')return p.roads>0&&getValidRoadEdges().length>0;
-      if(item==='settlement')return p.settlements>0&&getValidSettleVerts().length>0;
-      if(item==='city')return p.cities>0&&getValidCityVerts().length>0;
-      if(item==='devCard')return G.devDeck.length>0;
-      return false;
-    })||p.devCards.some(c=>!c.played&&c.type!=='vp'&&!c.newThisTurn);
-    if(!canBuild)setTimeout(endSpecialBuild,300);
-    // else: stop and let player decide
-  } else{checkAI();}
-}
-function toggleAutoSB(){
-  const modes=['off','smart','always'];
-  const idx=modes.indexOf(G.autoPassSB);
-  G.autoPassSB=modes[(idx+1)%3];
-  const btn=document.getElementById('autosb-btn');
-  if(btn){
-    const labels={off:'🔨 自動スキップ: OFF',smart:'🔨 資源があれば停止',always:'🔨 自動スキップ: ON ✓'};
-    btn.textContent=labels[G.autoPassSB];
-    btn.className=G.autoPassSB==='off'?'btn-s':G.autoPassSB==='smart'?'btn-p':'btn-g';
-    btn.style.cssText='width:100%;font-size:12px;padding:11px 8px';
-  }
+  else{checkAI();}
 }
 function endSpecialBuild(){
   // Refund pending placement resources if pass pressed while in placement mode
@@ -3667,17 +3661,6 @@ function buildMyResHtml(pid){
 function updateUI(){
   if(!G.players?.length)return;
   updatePlayerCards();updateBank();updateSpecial();updateActionButtons();updateCostPanel();
-  // Show special build setting toggle
-  const sbSet=document.getElementById('sb-setting');
-  if(sbSet){sbSet.style.display=G.players.length&&G.players.length>=5?'block':'none';}
-  // Sync autosb-btn label (3-state)
-  const autoBtn=document.getElementById('autosb-btn');
-  if(autoBtn){
-    const sbLabels={off:'🔨 自動スキップ: OFF',smart:'🔨 資源があれば停止',always:'🔨 自動スキップ: ON ✓'};
-    autoBtn.textContent=sbLabels[G.autoPassSB]||sbLabels.off;
-    autoBtn.className=G.autoPassSB==='off'?'btn-s':G.autoPassSB==='smart'?'btn-p':'btn-g';
-    autoBtn.style.cssText='width:100%;font-size:12px;padding:11px 8px';
-  }
   document.getElementById('deck-count').textContent=`残り ${G.devDeck.length} 枚`;
   const p=G.players[G.cur];
   document.getElementById('hdr-info').innerHTML=
@@ -4134,14 +4117,6 @@ function applyState(st){
   if(typeof st.status==='string')setStatus(st.status);
   guestAfterSync();
   render();updateUI();
-  // 自動スキップボタンはクライアント側設定を表示
-  const btn=document.getElementById('autosb-btn');
-  if(btn){
-    const labels={off:'🔨 自動スキップ: OFF',smart:'🔨 資源があれば停止',always:'🔨 自動スキップ: ON ✓'};
-    btn.textContent=labels[NET.autoSB];
-    btn.className=NET.autoSB==='off'?'btn-s':NET.autoSB==='smart'?'btn-p':'btn-g';
-    btn.style.cssText='width:100%;font-size:12px;padding:11px 8px';
-  }
 }
 function guestAfterSync(){
   if(G.phase==='main-roll'&&G._diceRoller==null)resetDiceBox();
@@ -4152,26 +4127,6 @@ function guestAfterSync(){
   }
   if(G.discardCurrent!==NET.myPid&&!document.getElementById('discard-ov').classList.contains('hidden'))
     closeModal('discard-ov');
-  // 特別建設フェーズ自動スキップ（自分の設定に従う）
-  if(G.phase==='special-build'&&G.cur===NET.myPid){
-    const sbKey=G.specialBuildIdx+':'+G.cur;
-    if(NET._sbHandled!==sbKey&&NET.autoSB!=='off'){
-      let skip=NET.autoSB==='always';
-      if(NET.autoSB==='smart'){
-        const p=G.players[G.cur];
-        const canBuild=['road','settlement','city','devCard'].some(item=>{
-          if(!canAfford(p,item))return false;
-          if(item==='road')return p.roads>0&&getValidRoadEdges().length>0;
-          if(item==='settlement')return p.settlements>0&&getValidSettleVerts().length>0;
-          if(item==='city')return p.cities>0&&getValidCityVerts().length>0;
-          if(item==='devCard')return G.devDeck.length>0;
-          return false;
-        })||p.devCards.some(c=>!c.played&&c.type!=='vp'&&!c.newThisTurn);
-        skip=!canBuild;
-      }
-      if(skip){NET._sbHandled=sbKey;setTimeout(()=>endSpecialBuild(),300);}
-    }
-  }
 }
 function setGuestBoardSize(Rv,cw,ch){
   R=Rv;W2=Math.sqrt(3)*R/2;VH=1.5*R;
@@ -4668,10 +4623,14 @@ function guestOnData(m){
 function guestFx(m){
   const d=m.data||{};
   switch(m.type){
-    case 'dice':
-      setDiceBox(d.d1,d.d2);
-      showDiceAnnounce(d.d1,d.d2,d.total,_num(d.spin,650)); // ホストと同じ長さで回す
+    case 'dice':{
+      const sp=_num(d.spin,650);
+      // 結果欄はホストと同じタイミング（目が止まってから）で更新する
+      if(sp>0){rollingDiceBox();setTimeout(()=>setDiceBox(d.d1,d.d2),sp);}
+      else setDiceBox(d.d1,d.d2);
+      showDiceAnnounce(d.d1,d.d2,d.total,sp); // ホストと同じ長さで回す
       break;
+    }
     case 'gain':
       for(const[pid,rs]of Object.entries(d.gains||{}))animateResourceGain(Number(pid),rs);
       break;
@@ -4750,19 +4709,6 @@ function installGuestOverrides(){
     netSend({a:'call',fn:'proposeTradeNet',args:[give,want]});
   };
   window.completeTrade=function(targetId){netSend({a:'call',fn:'completeTradeNet',args:[targetId]});};
-  window.toggleAutoSB=function(){
-    const modes=['off','smart','always'];
-    NET.autoSB=modes[(modes.indexOf(NET.autoSB)+1)%3];
-    const btn=document.getElementById('autosb-btn');
-    if(btn){
-      const labels={off:'🔨 自動スキップ: OFF',smart:'🔨 資源があれば停止',always:'🔨 自動スキップ: ON ✓'};
-      btn.textContent=labels[NET.autoSB];
-      btn.className=NET.autoSB==='off'?'btn-s':NET.autoSB==='smart'?'btn-p':'btn-g';
-      btn.style.cssText='width:100%;font-size:12px;padding:11px 8px';
-    }
-    NET._sbHandled=null;
-    guestAfterSync();
-  };
 }
 
 // ---- ロビー UI ----
