@@ -186,10 +186,12 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 #dice-fx.settled .dfx-dice span{animation:dfxLand .3s ease-out forwards}
 #dice-fx .dfx-dice svg{display:block;filter:drop-shadow(0 4px 8px rgba(0,0,0,.6))}
 #dice-fx .dfx-result{text-align:center;min-height:4px}
-/* 出目とプレイヤー名を囲む半透明の枠（背景が消えた後も読めるように残る） */
-#dice-fx .dfx-plate{margin-top:8px;padding:8px 22px 10px;border-radius:14px;
-  background:rgba(3,12,26,.72);border:2px solid rgba(244,164,96,.75);
-  box-shadow:0 6px 22px rgba(0,0,0,.75),inset 0 0 22px rgba(0,0,0,.35);backdrop-filter:blur(2px)}
+/* 出目とプレイヤー名を囲む枠。名前の長さで幅が変わらないよう固定する */
+#dice-fx .dfx-plate{margin-top:8px;padding:8px 10px 10px;border-radius:14px;
+  width:210px;box-sizing:border-box;
+  background:rgba(3,12,26,.5);border:2px solid rgba(244,164,96,.8);
+  box-shadow:0 6px 22px rgba(0,0,0,.55),inset 0 0 22px rgba(0,0,0,.25);backdrop-filter:blur(3px)}
+#dice-fx .dfx-plate .dfx-sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* 出目とプレイヤー名は縁取りを付け、背景が消えても盤面の上で読めるようにする */
 #dice-fx .dfx-num{font-size:56px;font-weight:900;color:#ffd489;line-height:1;
   -webkit-text-stroke:2px rgba(0,0,0,.85);paint-order:stroke fill;
@@ -199,7 +201,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
   text-shadow:0 2px 8px rgba(0,0,0,.95),0 0 14px rgba(0,0,0,.8)}
 #dice-fx.frameout .dfx-dice svg{filter:drop-shadow(0 4px 12px rgba(0,0,0,.95)) drop-shadow(0 0 4px rgba(0,0,0,.95))}
 /* 外枠が消えても、数字とプレイヤー名の枠は残して視認性を保つ */
-#dice-fx.frameout .dfx-plate{background:rgba(3,12,26,.8);border-color:rgba(244,164,96,.9)}
+#dice-fx.frameout .dfx-plate{background:rgba(3,12,26,.58);border-color:rgba(244,164,96,.95)}
 /* ダイス表示欄 */
 #dice-box .dbox-dice{display:flex;gap:7px;justify-content:center;align-items:center;line-height:0}
 #dice-box .dbox-dice svg{display:block;filter:drop-shadow(0 2px 5px rgba(0,0,0,.55))}
@@ -3858,15 +3860,15 @@ function toggleCostPanel(){
 function updateSpecial(){
   const la=G.largestArmy!==-1?G.players[G.largestArmy]:null;
   const lr=G.longestRoad!==-1?G.players[G.longestRoad]:null;
-  // 名前が5文字でも折り返さないよう、見出しを短くして1行に収める
-  const row=(icon,label,p,detail)=>
-    `<div class="bank-row sp-row"><span class="sp-label">${icon} ${label}</span>`+
+  // 未所持のときは従来どおりの名称。所持者がいるときだけ見出しを短縮して1行に収める
+  const row=(icon,full,short,p,detail)=>
+    `<div class="bank-row sp-row"><span class="sp-label">${icon} ${p?short:full}</span>`+
     `<span class="sp-holder" style="color:${p?.color||'#555'}">`+
     (p?`<span class="sp-name">${escapeHtml(p.name)}</span><span class="sp-num">${detail}</span>`:'なし')+
     `</span></div>`;
   document.getElementById('special-display').innerHTML=
-    row('⚔️','騎士',la,la?`${la.knights}`:'')+
-    row('🛤️','交易路',lr,lr?`${G.longestRoadSize}`:'');
+    row('⚔️','最大騎士力','騎士力',la,la?`${la.knights}`:'')+
+    row('🛤️','最長交易路','交易路',lr,lr?`${G.longestRoadSize}`:'');
 }
 
 function updateActionButtons(){
