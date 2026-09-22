@@ -173,10 +173,12 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 /* Dice roll effect — 画面中央でサイコロを転がす */
 #dice-fx{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9996;display:flex;flex-direction:column;align-items:center;gap:6px;
   background:rgba(4,16,36,.95);border:3px solid #f4a460;border-radius:24px;padding:26px 46px;pointer-events:none;
-  box-shadow:0 0 70px rgba(244,164,96,.4),0 12px 50px rgba(0,0,0,.8);animation:dfxIn .25s ease-out}
+  box-shadow:0 0 70px rgba(244,164,96,.4),0 12px 50px rgba(0,0,0,.8);animation:dfxIn .25s ease-out;
+  transition:background .35s ease,border-color .35s ease,box-shadow .35s ease,padding .35s ease}
+/* 外枠が消えるときは余白も畳んで、内側の枠と縁が重ならないようにする */
+#dice-fx.frameout{padding:0;border-width:0}
 #dice-fx.out{animation:dfxOut .4s ease-in forwards}
 /* 目が確定したら、枠と背面だけ先に消して盤面を見せる */
-#dice-fx{transition:background .5s ease,border-color .5s ease,box-shadow .5s ease}
 #dice-fx.frameout{background:transparent;border-color:transparent;box-shadow:none}
 #dice-fx.frameout .dfx-dice,#dice-fx.frameout .dfx-result{
   text-shadow:0 2px 12px rgba(0,0,0,.95),0 0 22px rgba(0,0,0,.85),0 0 4px rgba(0,0,0,.9)}
@@ -323,10 +325,6 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
               <select id="net-board-balance">
                 <option value="random" selected>🎲 ランダム</option><option value="even">⚖️ 均等にする</option>
               </select></div>
-            <div class="setup-item"><label>🔢 数字チップ</label>
-              <select id="net-board-numbers">
-                <option value="spiral" selected>📖 実際の組み方</option><option value="random">🎲 ランダム</option>
-              </select></div>
             <div class="setup-item"><label>🏦 銀行の残量</label>
               <select id="net-bank-view">
                 <option value="gauge" selected>📊 ゲージ</option><option value="num">🔢 正確な枚数</option>
@@ -378,10 +376,6 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
         <div class="setup-item"><label>🗺 資源の生産力</label>
           <select id="board-balance-sel">
             <option value="random" selected>🎲 ランダム</option><option value="even">⚖️ 均等にする</option>
-          </select></div>
-        <div class="setup-item"><label>🔢 数字チップ</label>
-          <select id="board-numbers-sel">
-            <option value="spiral" selected>📖 実際の組み方</option><option value="random">🎲 ランダム</option>
           </select></div>
         <div class="setup-item"><label>🏦 銀行の残量</label>
           <select id="bank-view-sel">
@@ -1426,8 +1420,8 @@ function showDiceRollFx(d1,d2,total,spin){
     // 数字とプレイヤー名は半透明の枠で囲み、盤面の上でも読めるようにする
     el.querySelector('#dfx-res').innerHTML=
       `<div class="dfx-plate"><div class="dfx-num">${total}</div>${sub}</div>`;
-    // 目が確定した直後に枠・背面だけ先行して消す（数字とサイコロは残る）
-    setTimeout(()=>el.classList.add('frameout'),120);
+    // 出目が確定したその瞬間に外枠と背面を消す（内側の枠だけが残る）
+    el.classList.add('frameout');
   },spinMs);
   setTimeout(()=>{
     el.classList.add('out');
@@ -3068,23 +3062,86 @@ function scoreVertex(vid){
   return score;
 }
 
+// 初期配置の評価: 生産量（出目の期待値）を軸に、資源の種類・すでに持つ資源との補完・港を加味する
+function setupScore(vid,pid){
+  const v=board.vertices[vid];
+  const diff=G?.difficulty||'normal';
+  // すでに置いた開拓地の産出（2軒目の判断に使う）
+  const owned={wood:0,brick:0,sheep:0,wheat:0,ore:0};
+  for(const ov of board.vertices){
+    if(ov.building!=='settlement'||ov.player!==pid)continue;
+    for(const hid of ov.hexes){
+      const h=board.hexes[hid];
+      if(h.num&&h.res!=='desert')owned[h.res]+=(PROB[h.num]||0);
+    }
+  }
+  let pips=0,score=0;
+  const kinds=new Set();
+  for(const hid of v.hexes){
+    const h=board.hexes[hid];
+    if(!h.num||h.res==='desert')continue;
+    const p=(PROB[h.num]||0);            // 出目の目の数＝生産力の基本
+    pips+=p;
+    kinds.add(h.res);
+    // 資源ごとの価値（鉱石と小麦は都市化に直結するので高め）
+    const val={wood:1.0,brick:1.0,sheep:0.9,wheat:1.25,ore:1.25}[h.res]||1;
+    score+=p*val*3.0;
+    // まだ産出のない資源はボーナス（1軒目は種類の多さ、2軒目は穴埋め）
+    if(owned[h.res]===0)score+=p*1.2;
+    // 6と8は止められやすいが生産力は高い。わずかに上乗せ
+    if(h.num===6||h.num===8)score+=1.2;
+  }
+  score+=pips*1.4;                        // 生産力そのものを重視
+  score+=kinds.size*2.2;                  // 1か所で複数資源が採れる形を優遇
+  // 5資源すべてを見渡せるようになる配置を強く評価
+  const after=new Set(kinds);
+  for(const r of RES)if(owned[r]>0)after.add(r);
+  score+=after.size*2.0;
+  if(after.size===5)score+=6;
+  // 港は2軒目以降の余剰活用に効く
+  if(v.port)score+=v.port==='3:1'?2.0:3.0;
+  if(diff==='easy')score+=Math.random()*10-5;
+  else if(diff==='normal')score+=Math.random()*3-1.5;
+  return score;
+}
 function aiSetupSettle(){
   const valid=getValidSettleVerts();if(!valid.length)return;
-  const best=valid.reduce((a,b)=>scoreVertex(a)>=scoreVertex(b)?a:b);
+  const me=G.cur;
+  const best=valid.reduce((a,b)=>setupScore(a,me)>=setupScore(b,me)?a:b);
   placeSettlement(best);
 }
 
 function aiSetupRoad(){
   const valid=getValidRoadEdges();if(!valid.length)return;
-  // Pick road toward best future vertex
-  let bestEdge=valid[0],bestScore=-1;
+  const me=G.cur;
+  // 直前に置いた開拓地から伸ばす道。次に開拓地を置きたい方向へ向ける
+  let bestEdge=valid[0],bestScore=-Infinity;
   for(const eid of valid){
     const e=board.edges[eid];
-    const v1=board.vertices[e.v1],v2=board.vertices[e.v2];
-    // Far vertex score (vertex not adjacent to current network)
-    const s1=v1.building?0:scoreVertex(e.v1);
-    const s2=v2.building?0:scoreVertex(e.v2);
-    const s=Math.max(s1,s2);
+    const far=(e.v1===G.lastSettle)?e.v2:e.v1;   // 開拓地の反対側の頂点
+    const fv=board.vertices[far];
+    let s=0;
+    if(fv.building){
+      s-=50; // 行き止まり（既に建物がある方向）は論外
+    } else {
+      // その先から2手で狙える開拓地候補の質を見る
+      let bestSpot=0,reachable=0;
+      for(const nvid of fv.adjV){
+        const nv=board.vertices[nvid];
+        if(nv.building)continue;
+        // 隣接規則で建てられない頂点は候補から外す
+        if(nv.adjV.some(id=>board.vertices[id].building))continue;
+        reachable++;
+        bestSpot=Math.max(bestSpot,setupScore(nvid,me));
+      }
+      // 自分自身がすぐ建てられる位置ならさらに良い
+      const selfOk=!fv.adjV.some(id=>board.vertices[id].building);
+      if(selfOk)bestSpot=Math.max(bestSpot,setupScore(far,me)*1.15);
+      s+=bestSpot;
+      s+=reachable*3;              // 伸ばす余地（袋小路を避ける）
+      if(!reachable&&!selfOk)s-=40; // どこにも繋がらない道は置かない
+      if(fv.port)s+=3;
+    }
     if(s>bestScore){bestScore=s;bestEdge=eid;}
   }
   placeRoad(bestEdge);
@@ -3976,7 +4033,7 @@ function startGame(){
   canvas.style.marginTop='36px';
   // 盤面オプションは initGame（=盤面生成）より前に決めておく必要がある
   BOARD_OPT={balance:document.getElementById('board-balance-sel')?.value||'random',
-             numbers:document.getElementById('board-numbers-sel')?.value||'spiral'};
+             numbers:'spiral'}; // 数字チップは常に実際の組み方
   initGame(defs);
   G.boardOpt={...BOARD_OPT};
   G.difficulty=window._pendingDifficulty||'normal';
@@ -4928,7 +4985,7 @@ function netStartGame(){
   canvas.style.transform='';canvas.style.marginBottom='';canvas.style.marginTop='36px';
   NET.started=true;
   BOARD_OPT={balance:document.getElementById('net-board-balance')?.value||'random',
-             numbers:document.getElementById('net-board-numbers')?.value||'spiral'};
+             numbers:'spiral'}; // 数字チップは常に実際の組み方
   initGame(defs);
   G.boardOpt={...BOARD_OPT};
   G.difficulty=diff;
