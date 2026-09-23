@@ -259,25 +259,19 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
   background:rgba(90,48,128,.32);border:1px solid rgba(170,120,220,.45);color:#ecdcff;border-radius:6px}
 .pc .used-pill .ul{font-weight:700;color:#c2a4ea}
 .pc .chip.hand{background:#1c3d5a;color:#c8dff0}
-/* 3行目の大きさ: 0=通常(大きめ) → 5=最小。使用済みカードが増えて1行に収まらないときだけ少しずつ縮める */
-.pc .prow2[data-fit="0"] .chip{font-size:18px;padding:5px 10px}
-.pc .prow2[data-fit="0"] .used-pill{font-size:15px;padding:4px 8px;gap:6px}
-.pc .prow2[data-fit="0"] .used-pill .ul{font-size:11px}
-.pc .prow2[data-fit="1"] .chip{font-size:16.5px;padding:4px 8px}
-.pc .prow2[data-fit="1"] .used-pill{font-size:14px;padding:3px 7px;gap:5px}
-.pc .prow2[data-fit="1"] .used-pill .ul{font-size:10.5px}
-.pc .prow2[data-fit="2"] .chip{font-size:15px;padding:3px 7px}
-.pc .prow2[data-fit="2"] .used-pill{font-size:13px;padding:2px 6px;gap:4px}
-.pc .prow2[data-fit="2"] .used-pill .ul{font-size:10px}
-.pc .prow2[data-fit="3"] .chip{font-size:13.5px;padding:2px 6px}
-.pc .prow2[data-fit="3"] .used-pill{font-size:12px;padding:2px 5px;gap:3px}
-.pc .prow2[data-fit="3"] .used-pill .ul{font-size:9.5px}
-.pc .prow2[data-fit="4"] .chip{font-size:12.5px;padding:1px 5px}
-.pc .prow2[data-fit="4"] .used-pill{font-size:11px;padding:1px 5px;gap:3px}
-.pc .prow2[data-fit="4"] .used-pill .ul{font-size:9px}
-.pc .prow2[data-fit="5"] .chip{font-size:11.5px;padding:1px 4px}
-.pc .prow2[data-fit="5"] .used-pill{font-size:10px;padding:1px 4px;gap:2px}
-.pc .prow2[data-fit="5"] .used-pill .ul{font-size:8.5px}
+/* 資源チップは全カードで同じ大きさ（画面が低いときだけ全カード一斉に縮める） */
+.pc .prow2 .chip{font-size:17px;padding:4px 9px}
+.pc-grid.compact .pc .prow2 .chip{font-size:15px;padding:3px 7px}
+.pc-grid.compact2 .pc .prow2 .chip{font-size:13px;padding:2px 5px}
+/* 「使用」の枠だけが、使用済みカードが増えて1行に収まらないときに段階的に縮む（0=通常 → 3=最小） */
+.pc .prow2[data-fit="0"] .used-pill{font-size:13.5px;padding:3px 7px;gap:5px}
+.pc .prow2[data-fit="0"] .used-pill .ul{font-size:10.5px}
+.pc .prow2[data-fit="1"] .used-pill{font-size:12px;padding:2px 6px;gap:4px}
+.pc .prow2[data-fit="1"] .used-pill .ul{font-size:10px}
+.pc .prow2[data-fit="2"] .used-pill{font-size:10.5px;padding:1px 5px;gap:3px}
+.pc .prow2[data-fit="2"] .used-pill .ul{font-size:9px}
+.pc .prow2[data-fit="3"] .used-pill{font-size:9.5px;padding:1px 4px;gap:2px}
+.pc .prow2[data-fit="3"] .used-pill .ul{font-size:8.5px}
 /* 画面が低いときはカード全体の余白を詰める */
 .pc-grid.compact .pc{padding:5px 8px}
 .pc-grid.compact .pc .prow1 .pn{font-size:14px}
@@ -3864,16 +3858,17 @@ function makePlayerCard(p){
   if(isMe(p.id))d.classList.add('self');
   return d;
 }
-// 3行目（資源＋使用済みカード）が1行に収まるまで段階的に縮める
-function fitCardRow(row,maxLevel){
-  const kids=row.children;
-  for(let lv=0;lv<=maxLevel;lv++){
+// 「使用」の枠が直前の資源チップと同じ行に並ぶまで、枠だけを段階的に縮める。
+// 最小でも入らなければ、資源チップは縮めずに枠を次の行へ回し、読みやすい大きさに戻す
+function fitCardRow(row){
+  const pill=row.querySelector('.used-pill');
+  const prev=pill&&pill.previousElementSibling;
+  if(!pill||!prev){row.dataset.fit=0;return;}
+  for(let lv=0;lv<=3;lv++){
     row.dataset.fit=lv;
-    if(kids.length<2)return lv;
-    // 最後の要素が最初の要素と同じ行にあれば1行に収まっている
-    if(kids[kids.length-1].offsetTop<=kids[0].offsetTop+3)return lv;
+    if(pill.offsetTop<=prev.offsetTop+3)return;
   }
-  return maxLevel;
+  row.dataset.fit=0;
 }
 
 function updatePlayerCards(){
@@ -3901,17 +3896,13 @@ function updatePlayerCards(){
   grid.className='pc-grid';
   G.players.forEach(p=>grid.appendChild(makePlayerCard(p)));
   lp.appendChild(grid);
-  // 各カードの3行目は、使用済みカードが増えて1行に収まらなくなったら縮める。
-  // 自分のカードは資源の種類が多く1行に収まりきらないので、小さくしすぎず折り返しを許す
-  for(const card of grid.querySelectorAll('.pc')){
-    const row=card.querySelector('.prow2');
-    if(row)fitCardRow(row,card.classList.contains('self')?1:5);
-  }
-  // それでも画面の高さに収まらなければ、段階的に詰めてスクロールを出さない
+  // 使用済みカードの枠を各カードで収め直す（資源チップの大きさは全カード共通のまま）
+  const fitAll=()=>{for(const row of grid.querySelectorAll('.prow2'))fitCardRow(row);};
+  fitAll();
+  // 画面の高さに収まらなければ、全カードの資源チップを一斉に縮めてスクロールを出さない
   const over=()=>lp.scrollHeight>lp.clientHeight+1;
-  if(over())grid.classList.add('compact');
-  if(over())for(const row of grid.querySelectorAll('.prow2'))fitCardRow(row,5);
-  if(over())grid.classList.add('compact2');
+  if(over()){grid.classList.add('compact');fitAll();}
+  if(over()){grid.classList.add('compact2');fitAll();}
 }
 function animateResourceGain(pid,gains){
   setTimeout(()=>{
