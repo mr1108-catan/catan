@@ -246,7 +246,29 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 
 /* player card rows */
 .pc .prow1{display:flex;align-items:center;justify-content:space-between;gap:4px;min-width:0}
-.pc .prow2{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.pc .prow1 .pn{font-size:15px;font-weight:800}
+.pc .pstat{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.pc .handct{font-size:13px;font-weight:700;color:#aac4d8}
+.pc .pvp{font-size:20px;color:#f4d060;font-weight:900}
+.pc .prow2{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;align-items:center}
+/* 残りのコマ数 */
+.pc .pieces{display:flex;align-items:center;gap:8px;margin-top:4px;font-size:13px;color:#aac4d8}
+.pc .pieces b{color:#e8e8e8}
+.pc .pieces .pl{font-size:10px;color:#8aaac0;background:#0a1a2c;border:1px solid #1a3a5c;border-radius:4px;padding:0 4px;line-height:1.5}
+/* 使った発展カード（資源欄の右の空きに置く） */
+.pc .used-pill{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;
+  background:rgba(90,48,128,.32);border:1px solid rgba(170,120,220,.45);color:#ecdcff;border-radius:6px;padding:2px 6px}
+.pc .used-pill .ul{font-size:9.5px;font-weight:700;color:#c2a4ea}
+/* 画面が低いときは段階的に詰める */
+.pc-grid.compact .pc{padding:5px 8px}
+.pc-grid.compact .pc .prow1 .pn{font-size:14px}
+.pc-grid.compact .pc .pvp{font-size:17px}
+.pc-grid.compact .pc .chip{font-size:14px;padding:2px 6px}
+.pc-grid.compact .pc .pieces,.pc-grid.compact .pc .prow2{margin-top:2px}
+.pc-grid.compact2 .pc{padding:3px 7px}
+.pc-grid.compact2 .pc .chip{font-size:12px;padding:1px 5px}
+.pc-grid.compact2 .pc .pieces{font-size:12px}
+.pc-grid.compact2 .pc .used-pill{font-size:11px;padding:1px 5px}
 .pc .pvmeta{font-size:12px;color:#8aaabf;display:flex;gap:6px;flex-wrap:wrap;margin-top:3px}
 .btn-opp{font-size:11px;padding:3px 7px}
 </style>
@@ -3789,25 +3811,37 @@ function makePlayerCard(p){
     if(p.resources.sheep)resHtml+='<span class="chip rs">🐑'+p.resources.sheep+'</span>';
     if(p.resources.wheat)resHtml+='<span class="chip rq">🌾'+p.resources.wheat+'</span>';
     if(p.resources.ore)resHtml+='<span class="chip ro">⛏️'+p.resources.ore+'</span>';
-    if(devCount)resHtml+='<span class="chip rd">📜'+devCount+'</span>';
-    // 勝利点カードは伏せ札。資源を公開設定にしても本人以外には見せない
-    if(isSelf&&p.vpCards)resHtml+='<span class="chip rk">⭐'+p.vpCards+'</span>';
-  } else {
-    resHtml='<span class="chip" style="background:#1c3d5a;color:#8aaac0">🃏 '+tot+'枚</span>';
-    if(devCount)resHtml+='<span class="chip rd">📜'+devCount+'</span>';
   }
+  if(devCount)resHtml+='<span class="chip rd" title="手元にある発展カード">📜'+devCount+'</span>';
+  // 勝利点カードは伏せ札。資源を公開設定にしても本人以外には見せない
+  if(isSelf&&p.vpCards)resHtml+='<span class="chip rk" title="手元の勝利点カード">⭐'+p.vpCards+'</span>';
+  // 使った発展カード（場に出したカードは公開情報）。騎士は使用回数そのもの
+  let usedHtml='';
+  for(const t of['knight','roadBuilding','yearOfPlenty','monopoly']){
+    const n=t==='knight'?p.knights:p.devCards.filter(c=>c.played&&c.type===t).length;
+    if(n>0){
+      const[icon,name]=DEV_TYPES[t].jp.split(' ');
+      usedHtml+=`<span title="${name}を${n}回使用">${icon}${n}</span>`;
+    }
+  }
+  if(usedHtml)usedHtml=`<span class="used-pill" title="これまでに使った発展カード"><span class="ul">使用</span>${usedHtml}</span>`;
+  const row3=resHtml+usedHtml;
   d.innerHTML=
     '<div class="prow1">'+
-      '<span class="pn" style="color:'+p.color+';font-size:15px;font-weight:800">'+(p._lost?'🔌':(p.isAI?'🤖':'👤'))+' '+escapeHtml(p.name)+
+      '<span class="pn" style="color:'+p.color+'">'+(p._lost?'🔌':(p.isAI?'🤖':'👤'))+' '+escapeHtml(p.name)+
         (p._lost?'<span class="pai" style="margin-left:4px;background:#6a3010;color:#ffcc99">切断・CPU代行</span>'
                :(p.isAI?'<span class="pai" style="margin-left:4px">AI</span>':''))+'</span>'+
-      '<span style="font-size:20px;color:#f4d060;font-weight:900">⭐'+totalVP+'</span>'+
+      '<span class="pstat"><span class="handct" title="資源カードの枚数">🃏'+tot+'</span>'+
+        '<span class="pvp">⭐'+totalVP+'</span></span>'+
     '</div>'+
-    '<div class="pvmeta" style="font-size:13px;gap:8px;margin-top:4px">'+
-      '<span>🃏<b>'+tot+'</b></span><span>⚔️<b>'+p.knights+'</b></span>'+
-      '<span>🏠<b>'+(5-p.settlements)+'</b></span><span>🏙<b>'+(4-p.cities)+'</b></span><span>🛤<b>'+(15-p.roads)+'</b></span>'+
+    // 名前と資源の間: 残りのコマ数
+    '<div class="pieces" title="手元に残っているコマの数">'+
+      '<span class="pl">残り</span>'+
+      '<span title="開拓地の残り">🏠<b>'+p.settlements+'</b></span>'+
+      '<span title="都市の残り">🏙<b>'+p.cities+'</b></span>'+
+      '<span title="街道の残り">🛤<b>'+p.roads+'</b></span>'+
     '</div>'+
-    '<div class="prow2" style="margin-top:5px;gap:5px">'+resHtml+'</div>';
+    (row3?'<div class="prow2">'+row3+'</div>':'');
   return d;
 }
 
@@ -3836,6 +3870,11 @@ function updatePlayerCards(){
   grid.className='pc-grid';
   G.players.forEach(p=>grid.appendChild(makePlayerCard(p)));
   lp.appendChild(grid);
+  // 画面の高さに収まらなければ、段階的に詰めてスクロールを出さない
+  for(const cls of['compact','compact2']){
+    if(lp.scrollHeight<=lp.clientHeight+1)break;
+    grid.classList.add(cls);
+  }
 }
 function animateResourceGain(pid,gains){
   setTimeout(()=>{
@@ -4145,8 +4184,10 @@ function serializeState(forPid){
     if(p.id===forPid||reveal)return {...p,resources:{...p.resources},devCards:p.devCards.map(c=>({...c}))};
     // 他人: 発展カードは種類も勝利点枚数も伏せる。資源は「公開」設定のときだけ内訳を送る
     const res=openHands?{...p.resources}:{wood:0,brick:0,sheep:0,wheat:0,ore:0,_hidden:sum(p.resources)};
+    // 使用済みのカードは場に出た公開情報なので種類を送る。手元の伏せ札だけ「?」にする
     return {...p,resources:res,vpCards:0,
-      devCards:p.devCards.map(c=>({type:'?',played:c.played,newThisTurn:false}))};
+      devCards:p.devCards.map(c=>c.played?{type:c.type,played:true,newThisTurn:false}
+                                          :{type:'?',played:false,newThisTurn:false})};
   });
   return {g,b:board,R,status:document.getElementById('status').textContent};
 }
