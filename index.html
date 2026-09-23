@@ -164,6 +164,20 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 #cost-panel{position:absolute;left:258px;top:5px;width:152px;z-index:9;display:none;flex-direction:column;gap:6px;
   max-height:calc(100% - 10px);overflow-y:auto}
 #cost-panel.on{display:flex}
+/* 一時停止ボタン（建設コスト表の上）と一時停止中の画面 */
+#pause-btn{width:100%;font-size:13px;font-weight:800;padding:8px 6px;border-radius:10px;cursor:pointer;
+  background:linear-gradient(#3a4f6a,#26364c);color:#e8f2ff;border:1px solid rgba(160,200,240,.45);box-shadow:0 2px 8px rgba(0,0,0,.35)}
+#pause-btn:hover{filter:brightness(1.15)}
+#pause-btn:disabled{opacity:.45;cursor:default;filter:none}
+#pause-ov{position:fixed;inset:0;z-index:700;background:rgba(2,10,20,.78);display:flex;align-items:center;justify-content:center}
+#pause-ov.hidden{display:none}
+#pause-ov .pz-box{background:#0b1d33;border:2px solid #6a9ccc;border-radius:18px;padding:26px 44px;text-align:center;
+  box-shadow:0 10px 50px rgba(0,0,0,.7);display:flex;flex-direction:column;gap:12px;align-items:center}
+#pause-ov .pz-title{font-size:26px;font-weight:900;color:#e8f2ff}
+#pause-ov .pz-time{font-size:56px;font-weight:900;color:#f4d060;font-variant-numeric:tabular-nums;line-height:1}
+#pause-ov .pz-by{font-size:14px;color:#a8c4dc}
+#pause-ov .pz-note{font-size:12px;color:#7890a8}
+#pause-ov button{font-size:17px;font-weight:800;padding:10px 34px;margin-top:4px}
 #cost-panel .info-card{display:flex;flex-direction:column;gap:4px;
   background:rgba(4,15,28,.92);border-radius:10px;padding:7px 8px;border:1px solid rgba(255,255,255,.1)}
 /* 特別賞の説明表 */
@@ -296,6 +310,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
     <div id="mid-left"></div>
     <!-- 建設コスト表（プレイヤーカードと盤面の間）-->
     <div id="cost-panel">
+      <button id="pause-btn" onclick="pauseGame()" title="ゲームを最大5分間止めます">⏸ 一時停止（5分）</button>
       <div class="info-card" id="cost-body"></div>
       <div class="info-card" id="award-body"></div>
     </div>
@@ -422,6 +437,10 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
         <div class="setup-item"><label>🗺 資源の生産力</label>
           <select id="board-balance-sel">
             <option value="random" selected>🎲 ランダム</option><option value="even">⚖️ 均等にする</option>
+          </select></div>
+        <div class="setup-item"><label>🔢 数字チップ</label>
+          <select id="board-numbers-sel">
+            <option value="spiral" selected>📖 実際の組み方</option><option value="random">🎲 ランダム</option>
           </select></div>
         <div class="setup-item"><label>🏦 銀行の残量</label>
           <select id="bank-view-sel">
@@ -3967,8 +3986,15 @@ function updateCostPanel(){
   const panel=document.getElementById('cost-panel');
   const body=document.getElementById('cost-body');
   if(!panel||!body)return;
-  const on=G.showCosts!==false&&!!(G.players&&G.players.length);
-  panel.classList.toggle('on',on);
+  // パネル自体（一時停止ボタン）はゲーム中は常に出し、コスト表・特別賞だけを表示切替する
+  const started=!!(G.players&&G.players.length);
+  panel.classList.toggle('on',started);
+  const pb=document.getElementById('pause-btn');
+  if(pb)pb.disabled=!started||G.winner!==-1||!!G.pause;
+  const on=G.showCosts!==false&&started;
+  body.style.display=on?'':'none';
+  const aw=document.getElementById('award-body');
+  if(aw)aw.style.display=on?'':'none';
   if(!on)return;
   // 判定はこの画面のプレイヤー基準。CPUの手番中に相手の可否が光らないようにする
   if(!NET.on&&!isAI(G.cur))G._costOwner=G.cur;
@@ -4144,8 +4170,9 @@ function startGame(){
   // Shift board downward within #mid
   canvas.style.marginTop='36px';
   // 盤面オプションは initGame（=盤面生成）より前に決めておく必要がある
+  // 数字チップのランダム配置はオフライン対戦でのみ選べる（オンラインは常に実際の組み方）
   BOARD_OPT={balance:document.getElementById('board-balance-sel')?.value||'random',
-             numbers:'spiral'}; // 数字チップは常に実際の組み方
+             numbers:document.getElementById('board-numbers-sel')?.value==='random'?'random':'spiral'};
   initGame(defs);
   G.boardOpt={...BOARD_OPT};
   G.difficulty=window._pendingDifficulty||'normal';
@@ -4198,6 +4225,8 @@ function serializeState(forPid){
   }
   g._undoSnapshot=G._undoSnapshot?1:null;
   g.devDeck=G.devDeck.map(()=>'?'); // 山札の中身はゲストに送らない
+  // 一時停止の終了時刻は端末ごとに時計がずれるため「残り時間」で送る
+  g.pause=G.pause?{left:Math.max(0,G.pause.until-Date.now()),by:G.pause.by}:null;
   const openHands=G.openHands==='on';
   const reveal=G.winner!==-1; // 決着後は全員の内容を明かす
   g.players=G.players.map(p=>{
@@ -4289,6 +4318,9 @@ function sanitizeIncomingState(g){
   g.declareWin=g.declareWin==='off'?'off':'on';
   g.diceFx=g.diceFx==='off'?'off':'on';
   g.vpWin=(g.vpWin>=5&&g.vpWin<=20)?_num(g.vpWin):VP_WIN_DEFAULT;
+  g.pause=g.pause&&typeof g.pause==='object'
+    ?{until:Date.now()+Math.min(PAUSE_MS,Math.max(0,_num(g.pause.left))),by:g.pause.by?_safeName(g.pause.by):''}
+    :null;
   g.diceLog=Array.isArray(g.diceLog)
     ?g.diceLog.map(e=>({name:_safeName(e&&e.name),d1:_num(e&&e.d1),d2:_num(e&&e.d2),total:_num(e&&e.total)}))
     :[];
@@ -4414,6 +4446,9 @@ function hostHandleCall(conn,m){
   const pid=NET.pidByConn.get(conn);
   if(pid==null||!G.players||!G.players[pid])return;
   if(G.winner!==-1)return;
+  if(m.fn==='pauseGame'){_doPause(pid);return;}
+  if(m.fn==='resumeGame'){_doResume(pid);return;}
+  if(G.pause)return; // 一時停止中はゲームの操作を受け付けない
   // 継承プロパティ(toString など)がホワイトリストを通過しないよう自前のキーだけを許可する
   if(typeof m.fn!=='string'||!Object.prototype.hasOwnProperty.call(NET_CALLS,m.fn))return;
   const chk=NET_CALLS[m.fn];
@@ -4869,6 +4904,8 @@ function installGuestOverrides(){
     'sbBuildRoad','sbBuildSettlement','sbBuildCity',
     'placeSettlement','placeRoad','placeCity','activateRobber','stealFrom'];
   for(const fn of fwd)window[fn]=function(...args){netSend({a:'call',fn,args:_cleanArgs(args)});};
+  window.pauseGame=function(){netSend({a:'call',fn:'pauseGame',args:[]});};
+  window.resumeGame=function(){netSend({a:'call',fn:'resumeGame',args:[]});};
   window.checkAI=function(){};
   window.runAITurn=function(){};
   window.aiMainAction=function(){};
@@ -5118,7 +5155,71 @@ function netStartGame(){
 
 // ---- 既存関数のオンライン用ラップ（読み込み時に一度だけ適用）----
 const _origUpdateUI=updateUI;
-updateUI=function(){_origUpdateUI();netSendState();};
+updateUI=function(){_origUpdateUI();updatePauseOverlay();netSendState();};
+
+// ==================== 一時停止 ====================
+// ホスト（オフラインでは自分の画面）が停止状態を持ち、5分経つと自動で再開する
+const PAUSE_MS=5*60*1000;
+let _pauseQueue=[],_pauseTick=null;
+function _pausedHere(){return !!(G&&G.pause)&&NET.mode!=='guest';}
+// 停止中に呼ばれたCPUの行動・特別建設の進行・交渉の締め切りは保留し、再開時に順に実行する
+for(const fn of['checkAI','runAITurn','aiMainAction','aiSpecialBuildAction','aiMoveRobber',
+  'nextSpecialBuild','endSpecialBuild','netTradeResults','netTradeClose']){
+  const orig=window[fn];
+  if(typeof orig!=='function')continue;
+  window[fn]=function(...args){
+    if(_pausedHere()){const g=G;_pauseQueue.push(()=>{if(G===g)orig.apply(this,args);});return;}
+    return orig.apply(this,args);
+  };
+}
+function pauseGame(){_doPause(NET.on?NET.myPid:null);}
+function resumeGame(){_doResume(NET.on?NET.myPid:null);}
+function _doPause(pid){
+  if(!G.players||!G.players.length||G.winner!==-1||G.pause)return;
+  const by=pid!=null&&G.players[pid]?G.players[pid].name:'';
+  G.pause={until:Date.now()+PAUSE_MS,by};
+  addLog(`⏸ ${by?by+' が':''}ゲームを一時停止しました（最大5分）`);
+  updateUI();
+}
+function _doResume(pid,auto=false){
+  if(!G.pause)return;
+  G.pause=null;
+  const by=pid!=null&&G.players[pid]?G.players[pid].name:'';
+  addLog(auto?'⏱ 5分たったのでゲームを再開しました':`▶ ${by?by+' が':''}ゲームを再開しました`);
+  updateUI();
+  const q=_pauseQueue;_pauseQueue=[];
+  for(const f of q){try{f();}catch(e){console.error('resume error:',e);}}
+}
+function updatePauseOverlay(){
+  let ov=document.getElementById('pause-ov');
+  const on=!!(G&&G.pause)&&G.winner===-1;
+  if(!on){
+    if(ov)ov.classList.add('hidden');
+    if(_pauseTick){clearInterval(_pauseTick);_pauseTick=null;}
+    return;
+  }
+  if(!ov){
+    ov=document.createElement('div');ov.id='pause-ov';
+    ov.innerHTML='<div class="pz-box"><div class="pz-title">⏸ 一時停止中</div>'+
+      '<div class="pz-time" id="pz-time">5:00</div><div class="pz-by" id="pz-by"></div>'+
+      '<button class="btn-p" onclick="resumeGame()">▶ 再開する</button>'+
+      '<div class="pz-note">時間になると自動で再開します</div></div>';
+    document.body.appendChild(ov);
+  }
+  ov.classList.remove('hidden');
+  document.getElementById('pz-by').textContent=G.pause.by?`${G.pause.by} が一時停止しました`:'';
+  const tick=()=>{
+    if(!G.pause){updatePauseOverlay();return;}
+    const left=Math.max(0,G.pause.until-Date.now());
+    const s=Math.ceil(left/1000);
+    const el=document.getElementById('pz-time');
+    if(el)el.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+    // 自動再開はホスト（オフラインでは自分）だけが行い、ゲストには状態で伝わる
+    if(left<=0&&NET.mode!=='guest')_doResume(null,true);
+  };
+  tick();
+  if(!_pauseTick)_pauseTick=setInterval(tick,250);
+}
 const _origAddLog=addLog;
 addLog=function(msg){
   _origAddLog(msg);
