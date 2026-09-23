@@ -247,7 +247,9 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 /* player card rows */
 /* カードは「左: 名前・コマ・資源」と「右: 使用済み発展カードの縦列」の2列 */
 .pc{display:flex;align-items:stretch;gap:6px}
-.pc .pc-main{flex:1 1 auto;min-width:0}
+.pc .pc-main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;justify-content:center}
+/* 上部のボタンを外して空いた分を、収まる場合に限り各カードの上下の余白として配分する */
+#mid-left .pc-grid.roomy .pc{padding-top:10px;padding-bottom:10px}
 /* 1行目: 目印 → 名前 → すぐ右に勝利点 */
 .pc .prow1{display:flex;align-items:center;gap:6px;min-width:0}
 .pc .prow1 .pmark{flex-shrink:0}
@@ -3815,7 +3817,7 @@ function makePlayerCard(p){
   const isSelf=isMe(p.id)||G.winner!==-1;
   const devCount=isSelf?p.devCards.filter(c=>!c.played&&c.type!=='vp').length
                        :p.devCards.filter(c=>!c.played).length;
-  const showRes=isSelf||G.openHands==='on'||(!NET.on&&G.showOppRes);
+  const showRes=isSelf||G.openHands==='on';
   let resHtml='';
   if(showRes){
     if(p.resources.wood)resHtml+='<span class="chip rw">🌲'+p.resources.wood+'</span>';
@@ -3871,14 +3873,7 @@ function makePlayerCard(p){
 function updatePlayerCards(){
   const lp=document.getElementById('mid-left');if(!lp)return;lp.innerHTML='';
   const rpp=document.getElementById('rp-players');if(rpp)rpp.innerHTML='';
-  // Toggle button
-  const tb=document.createElement('button');
-  tb.className='btn-s btn-opp';
-  tb.style.cssText='width:100%;margin-bottom:4px;font-size:11px;padding:3px 6px';
-  tb.textContent=G.showOppRes?'🔓 CPU資源を隠す':'🔒 CPU資源を表示';
-  tb.onclick=()=>{G.showOppRes=!G.showOppRes;updatePlayerCards();};
-  // オンラインや「公開」設定のときは開始前の設定に従うのでトグルは出さない
-  if(!NET.on&&G.openHands!=='on')lp.appendChild(tb);
+  // 相手の資源を見せるかどうかは開始前画面の「相手の資源」設定で決まる
   // コスト表を隠しているときだけ再表示ボタンを出す
   if(G.showCosts===false){
     const cb=document.createElement('button');
@@ -3895,6 +3890,9 @@ function updatePlayerCards(){
   lp.appendChild(grid);
   // 画面の高さに収まらなければ、全カードを一斉に詰めてスクロールを出さない（資源チップの大きさは全カード共通）
   const over=()=>lp.scrollHeight>lp.clientHeight+1;
+  // まずゆとりのある余白で並べ、入らなければ通常 → 詰め表示 → さらに詰め表示の順に試す
+  grid.classList.add('roomy');
+  if(over())grid.classList.remove('roomy');
   if(over())grid.classList.add('compact');
   if(over())grid.classList.add('compact2');
 }
