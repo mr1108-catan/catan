@@ -3945,9 +3945,6 @@ function updateAwardPanel(ownerId){
   const armyNeed=la?G.largestArmySize+1:3;
   const myRoad=me?computeRoadLen(me.id):0;
   const myArmy=me?me.knights:0;
-  const holder=(p,n,unit)=>p
-    ?`保持: <b style="color:${p.color}">${escapeHtml(p.name)}</b> ${n}${unit}`
-    :'保持: <span style="color:#6a8aa0">なし</span>';
   const mine=(v,need,unit,isHolder)=>isHolder
     ?`<span style="color:#7ee0a0">あなたが保持中</span>`
     :`あなた: <b>${v}${unit}</b>`+(v>=need?' <span style="color:#7ee0a0">→奪取可</span>'
@@ -3956,17 +3953,13 @@ function updateAwardPanel(ownerId){
     '<div style="font-size:11px;color:#f4a460;font-weight:700;border-bottom:1px solid #1a3a5c;padding-bottom:4px">🏅 特別賞（各 ＋2点）</div>'+
     '<div class="aw-block">'+
       '<div class="aw-title"><span>🛤️ 最長交易路</span><span class="cost-vp">＋2点</span></div>'+
-      '<div class="aw-rule">途切れずに5本以上つながった街道が最も長い人</div>'+
-      `<div class="aw-now">${holder(lr,G.longestRoadSize,'本')}<br>`+
-        `${lr?'奪取':'獲得'}: <b>${roadNeed}本〜</b><br>`+
-        `${mine(myRoad,roadNeed,'本',lr&&me&&lr.id===me.id)}</div>`+
+      '<div class="aw-rule"><b style="color:#c8dff0">一筆書き</b>でたどれる5本以上の街道が最も長い人（枝分かれした部分は数えない）</div>'+
+      `<div class="aw-now">${mine(myRoad,roadNeed,'本',lr&&me&&lr.id===me.id)}</div>`+
     '</div>'+
     '<div class="aw-block">'+
       '<div class="aw-title"><span>⚔️ 最大騎士力</span><span class="cost-vp">＋2点</span></div>'+
       '<div class="aw-rule">騎士カードを3回以上使い、最も多い人</div>'+
-      `<div class="aw-now">${holder(la,G.largestArmySize,'回')}<br>`+
-        `${la?'奪取':'獲得'}: <b>${armyNeed}回〜</b><br>`+
-        `${mine(myArmy,armyNeed,'回',la&&me&&la.id===me.id)}</div>`+
+      `<div class="aw-now">${mine(myArmy,armyNeed,'回',la&&me&&la.id===me.id)}</div>`+
     '</div>'+
     '<div class="aw-note">※同数では奪えません<br>※他人の開拓地で街道は分断されます</div>';
 }
