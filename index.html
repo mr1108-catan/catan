@@ -594,7 +594,7 @@ const DEV_TYPES = {
   knight:{jp:'⚔️ 騎士',desc:'山賊を移動→隣接相手から資源を奪う'},
   vp:{jp:'⭐ 勝利点',desc:'+1勝利点（秘密・自動適用）'},
   roadBuilding:{jp:'🛤️ 道路建設',desc:'道路を2本無料で建設'},
-  yearOfPlenty:{jp:'🌾 発見',desc:'銀行から任意資源を2枚受け取る'},
+  yearOfPlenty:{jp:'👀 発見',desc:'銀行から任意資源を2枚受け取る'},
   monopoly:{jp:'👑 独占',desc:'全員から同一資源を全て奪う'}
 };
 const DEV_DECK_BASE = [...Array(20).fill('knight'),...Array(5).fill('vp'),...Array(3).fill('roadBuilding'),...Array(3).fill('yearOfPlenty'),...Array(3).fill('monopoly')];
@@ -1963,7 +1963,7 @@ function _renderYopSelect(){
     <button style="margin-left:10px;font-size:11px;padding:2px 8px;background:#3a1010;color:#ffaaaa;border:1px solid #882222;border-radius:4px;cursor:pointer" onclick="G._yopPending=[];_renderYopSelect()">リセット</button>
   </div>`:'';
   document.getElementById('yop-modal-body').innerHTML=
-    `<h3>🌾 発見 — 資源を2枚受け取る</h3>`+
+    `<h3>👀 発見 — 資源を2枚受け取る</h3>`+
     buildMyResHtml(G.cur)+
     `<p style="font-size:13px;color:#8aaac0;margin:10px 0 8px">資源を選んでください（あと <b>${left}</b> 枚）</p>`+
     `<div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">${btns}</div>`+
@@ -1983,7 +1983,7 @@ function _renderYopConfirm(){
   const cnt={};for(const r of pending)cnt[r]=(cnt[r]||0)+1;
   const summary=Object.entries(cnt).map(([r,n])=>`${RES_EMOJI[r]} ${RES_JP[r]}×${n}`).join('　＋　');
   document.getElementById('yop-modal-body').innerHTML=
-    `<h3>🌾 発見 — 確認</h3>`+
+    `<h3>👀 発見 — 確認</h3>`+
     buildMyResHtml(G.cur)+
     `<p style="font-size:13px;color:#8aaac0;margin:10px 0 12px">以下の資源を受け取ります。よろしいですか？</p>`+
     `<div style="text-align:center;font-size:18px;font-weight:700;color:#fff;padding:14px;background:#0d2035;border-radius:10px;margin:10px 0">${summary}</div>`+
@@ -2092,7 +2092,7 @@ function showCardEffectPopup(name,color,card,data){
     body=`<b style="font-size:19px">${RES_EMOJI[d.res]} ${RES_JP[d.res]}</b>${amtHtml} を独占！`;
   } else {
     const list=(d.res||[]);
-    title='<span style="color:#88ddaa">🌾 発見</span>';
+    title='<span style="color:#88ddaa">👀 発見</span>';
     body=list.length
       ?`<b style="font-size:19px">${list.map(r=>`${RES_EMOJI[r]} ${RES_JP[r]}`).join(' ＋ ')}</b> を獲得！`
       :'獲得できる資源がありませんでした';
