@@ -245,10 +245,11 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 @keyframes hexglow{0%,100%{opacity:.7}50%{opacity:1}}
 
 /* player card rows */
-.pc .prow1{display:flex;align-items:center;justify-content:space-between;gap:4px;min-width:0}
-.pc .prow1 .pn{font-size:15px;font-weight:800}
-.pc .pstat{display:flex;align-items:center;gap:7px;flex-shrink:0}
-.pc .pvp{font-size:20px;color:#f4d060;font-weight:900}
+/* 1行目: 名前 → すぐ右に勝利点 → 右端に使用済みカード */
+.pc .prow1{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0}
+.pc .prow1 .pn{font-size:15px;font-weight:800;white-space:nowrap;overflow:visible}
+.pc .pvp{font-size:20px;color:#f4d060;font-weight:900;white-space:nowrap;flex-shrink:0}
+.pc .pieces .pbadge{margin-left:auto}
 .pc .prow2{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;align-items:center}
 /* 残りのコマ数 */
 .pc .pieces{display:flex;align-items:center;gap:8px;margin-top:4px;font-size:13px;color:#aac4d8}
@@ -264,14 +265,17 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 .pc-grid.compact .pc .prow2 .chip{font-size:15px;padding:3px 7px}
 .pc-grid.compact2 .pc .prow2 .chip{font-size:13px;padding:2px 5px}
 /* 「使用」の枠だけが、使用済みカードが増えて1行に収まらないときに段階的に縮む（0=通常 → 3=最小） */
-.pc .prow2[data-fit="0"] .used-pill{font-size:13.5px;padding:3px 7px;gap:5px}
-.pc .prow2[data-fit="0"] .used-pill .ul{font-size:10.5px}
-.pc .prow2[data-fit="1"] .used-pill{font-size:12px;padding:2px 6px;gap:4px}
-.pc .prow2[data-fit="1"] .used-pill .ul{font-size:10px}
-.pc .prow2[data-fit="2"] .used-pill{font-size:10.5px;padding:1px 5px;gap:3px}
-.pc .prow2[data-fit="2"] .used-pill .ul{font-size:9px}
-.pc .prow2[data-fit="3"] .used-pill{font-size:9.5px;padding:1px 4px;gap:2px}
-.pc .prow2[data-fit="3"] .used-pill .ul{font-size:8.5px}
+.pc .prow1[data-fit="0"] .used-pill{font-size:13.5px;padding:3px 7px;gap:5px}
+.pc .prow1[data-fit="0"] .used-pill .ul{font-size:10.5px}
+.pc .prow1[data-fit="1"] .used-pill{font-size:12px;padding:2px 6px;gap:4px}
+.pc .prow1[data-fit="1"] .used-pill .ul{font-size:10px}
+.pc .prow1[data-fit="2"] .used-pill{font-size:10.5px;padding:1px 5px;gap:3px}
+.pc .prow1[data-fit="2"] .used-pill .ul{font-size:9px}
+.pc .prow1[data-fit="3"] .used-pill{font-size:9.5px;padding:1px 4px;gap:2px}
+.pc .prow1[data-fit="3"] .used-pill .ul{font-size:8.5px}
+/* 最終段階: 「使用」の文字を省いて幅を稼ぐ（紫の枠と説明表示で判別できる） */
+.pc .prow1[data-fit="4"] .used-pill{font-size:9.5px;padding:1px 4px;gap:2px}
+.pc .prow1[data-fit="4"] .used-pill .ul{display:none}
 /* 画面が低いときはカード全体の余白を詰める */
 .pc-grid.compact .pc{padding:5px 8px}
 .pc-grid.compact .pc .prow1 .pn{font-size:14px}
@@ -1459,9 +1463,12 @@ function showDiceRollFx(d1,d2,total,spin){
     clearInterval(tumble);
     a.innerHTML=diceSvg(d1,92);b.innerHTML=diceSvg(d2,92);
     el.classList.add('settled');
+    // 名前は省略せず全文を出す。枠の幅は固定なので、長い名前ほど文字を小さくして収める
+    const nameLen=[...p.name].length;
+    const nameFs=Math.min(21,Math.floor(180/Math.max(1,nameLen)));
     const sub=total===7
       ?'<div class="dfx-sub" style="color:#ff9c9c">🏴 山賊発動！</div>'
-      :`<div class="dfx-sub" style="color:${p.color}">${escapeHtml(p.name)}</div>`;
+      :`<div class="dfx-sub" style="color:${p.color};font-size:${nameFs}px">${escapeHtml(p.name)}</div>`;
     // 数字とプレイヤー名は半透明の枠で囲み、盤面の上でも読めるようにする
     el.querySelector('#dfx-res').innerHTML=
       `<div class="dfx-plate"><div class="dfx-num">${total}</div>${sub}</div>`;
@@ -3838,13 +3845,18 @@ function makePlayerCard(p){
     }
   }
   if(usedHtml)usedHtml=`<span class="used-pill" title="これまでに使った発展カード"><span class="ul">使用</span>${usedHtml}</span>`;
-  const row3=resHtml+usedHtml;
+  // カードでは名前を5文字までに抑える（全文はマウスを乗せると表示）
+  const shortName=[...p.name].slice(0,5).join('');
+  // CPU・切断中の目印は、名前の横を空けるため2行目の右端に置く
+  const badge=p._lost?'<span class="pai pbadge" style="background:#6a3010;color:#ffcc99">切断・CPU代行</span>'
+             :(p.isAI?'<span class="pai pbadge">AI</span>':'');
   d.innerHTML=
-    '<div class="prow1">'+
-      '<span class="pn" style="color:'+p.color+'">'+(p._lost?'🔌':(p.isAI?'🤖':'👤'))+' '+escapeHtml(p.name)+
-        (p._lost?'<span class="pai" style="margin-left:4px;background:#6a3010;color:#ffcc99">切断・CPU代行</span>'
-               :(p.isAI?'<span class="pai" style="margin-left:4px">AI</span>':''))+'</span>'+
-      '<span class="pstat"><span class="pvp">⭐'+totalVP+'</span></span>'+
+    // 1行目: 名前 → すぐ右に勝利点 → 空いた右側に使用済みの発展カード
+    // data-fit: 0=通常 → 3=最小。使用済みカードが1行に収まらないときだけ段階的に縮める
+    '<div class="prow1" data-fit="0">'+
+      '<span class="pn" style="color:'+p.color+'" title="'+escapeHtml(p.name)+'">'+escapeHtml(shortName)+'</span>'+
+      '<span class="pvp">⭐'+totalVP+'</span>'+
+      usedHtml+
     '</div>'+
     // 名前と資源の間: 残りのコマ数
     '<div class="pieces" title="手元に残っているコマの数">'+
@@ -3852,21 +3864,23 @@ function makePlayerCard(p){
       '<span title="開拓地の残り">🏠<b>'+p.settlements+'</b></span>'+
       '<span title="都市の残り">🏙<b>'+p.cities+'</b></span>'+
       '<span title="街道の残り">🛤<b>'+p.roads+'</b></span>'+
+      badge+
     '</div>'+
-    // data-fit: 0=通常(大きめ) → 3=最小。1行に収まらないときだけ段階的に縮める
-    (row3?'<div class="prow2" data-fit="0">'+row3+'</div>':'');
+    (resHtml?'<div class="prow2">'+resHtml+'</div>':'');
   if(isMe(p.id))d.classList.add('self');
   return d;
 }
-// 「使用」の枠が直前の資源チップと同じ行に並ぶまで、枠だけを段階的に縮める。
-// 最小でも入らなければ、資源チップは縮めずに枠を次の行へ回し、読みやすい大きさに戻す
+// 「使用」の枠が勝利点と同じ行に並ぶまで、枠だけを段階的に縮める。
+// 最小でも入らなければ、枠を次の行へ回し、読みやすい大きさに戻す
 function fitCardRow(row){
   const pill=row.querySelector('.used-pill');
   const prev=pill&&pill.previousElementSibling;
   if(!pill||!prev){row.dataset.fit=0;return;}
-  for(let lv=0;lv<=3;lv++){
+  // 高さの違う要素を中央揃えしているので、枠の上端が直前の要素の下端より上なら同じ行
+  const sameLine=()=>pill.offsetTop<prev.offsetTop+prev.offsetHeight-2;
+  for(let lv=0;lv<=4;lv++){
     row.dataset.fit=lv;
-    if(pill.offsetTop<=prev.offsetTop+3)return;
+    if(sameLine())return;
   }
   row.dataset.fit=0;
 }
@@ -3897,7 +3911,7 @@ function updatePlayerCards(){
   G.players.forEach(p=>grid.appendChild(makePlayerCard(p)));
   lp.appendChild(grid);
   // 使用済みカードの枠を各カードで収め直す（資源チップの大きさは全カード共通のまま）
-  const fitAll=()=>{for(const row of grid.querySelectorAll('.prow2'))fitCardRow(row);};
+  const fitAll=()=>{for(const row of grid.querySelectorAll('.prow1'))fitCardRow(row);};
   fitAll();
   // 画面の高さに収まらなければ、全カードの資源チップを一斉に縮めてスクロールを出さない
   const over=()=>lp.scrollHeight>lp.clientHeight+1;
