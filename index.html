@@ -172,12 +172,28 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 #pause-ov{position:fixed;inset:0;z-index:700;background:rgba(2,10,20,.78);display:flex;align-items:center;justify-content:center}
 #pause-ov.hidden{display:none}
 #pause-ov .pz-box{background:#0b1d33;border:2px solid #6a9ccc;border-radius:18px;padding:26px 44px;text-align:center;
-  box-shadow:0 10px 50px rgba(0,0,0,.7);display:flex;flex-direction:column;gap:12px;align-items:center}
+  box-shadow:0 10px 50px rgba(0,0,0,.7);display:flex;flex-direction:column;gap:12px;align-items:center;
+  max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);overflow:auto;box-sizing:border-box}
 #pause-ov .pz-title{font-size:26px;font-weight:900;color:#e8f2ff}
 #pause-ov .pz-time{font-size:56px;font-weight:900;color:#f4d060;font-variant-numeric:tabular-nums;line-height:1}
 #pause-ov .pz-by{font-size:14px;color:#a8c4dc}
 #pause-ov .pz-note{font-size:12px;color:#7890a8}
-#pause-ov button{font-size:17px;font-weight:800;padding:10px 34px;margin-top:4px}
+#pause-ov .btn-p{font-size:17px;font-weight:800;padding:10px 34px;margin-top:4px}
+/* ホスト専用: 参加者ごとのCPU代行・再接続の設定 */
+#pz-host{width:100%;background:#071525;border:1px solid #1e3a58;border-radius:12px;padding:10px 12px;text-align:left}
+#pz-host .pz-h{font-size:14px;font-weight:800;color:#f4a460;margin-bottom:6px}
+#pz-host .pz-h span{font-size:11px;font-weight:400;color:#7890a8;margin-left:6px}
+#pz-host .pz-tbl{border-collapse:collapse;width:100%;font-size:13px}
+#pz-host .pz-tbl th{font-size:11px;color:#7890a8;font-weight:600;text-align:left;padding:2px 8px 4px}
+#pz-host .pz-tbl td{padding:5px 8px;border-top:1px solid #12283f;white-space:nowrap;vertical-align:middle}
+#pz-host .pz-nm{font-weight:800}
+#pz-host .pz-st{font-size:12px}
+#pz-host .pz-st.ok{color:#7ee0a0}#pz-host .pz-st.warn{color:#f4d060}#pz-host .pz-st.ng{color:#ffaa88}
+#pz-host .pz-seg{font-size:12px;padding:4px 10px;border:1px solid #2e5a80;background:#10263d;color:#8aaac0;cursor:pointer}
+#pz-host .pz-seg:first-child{border-radius:7px 0 0 7px}
+#pz-host .pz-seg:last-child{border-radius:0 7px 7px 0;border-left:none}
+#pz-host .pz-seg.on{background:#2e6aa0;color:#fff;font-weight:800}
+#pz-host .pz-empty{font-size:11px;color:#7890a8;margin-top:6px}
 #cost-panel .info-card{display:flex;flex-direction:column;gap:4px;
   background:rgba(4,15,28,.92);border-radius:10px;padding:7px 8px;border:1px solid rgba(255,255,255,.1)}
 /* 特別賞の説明表 */
@@ -3866,6 +3882,7 @@ function makePlayerCard(p){
   const shortName=[...p.name].slice(0,5).join('');
   // CPU・切断中の目印は名前の左に置く
   const mark=p._lost?'<span class="pai pmark" style="background:#6a3010;color:#ffcc99" title="切断中・CPUが代行しています">切断</span>'
+            :p._proxy?'<span class="pai pmark" style="background:#5a4a10;color:#ffe8a0" title="ホストの設定でCPUが代行しています">代行</span>'
             :(p.isAI?'<span class="pai pmark" title="CPUが操作しています">AI</span>':'');
   d.innerHTML=
     '<div class="pc-main">'+
@@ -3990,7 +4007,13 @@ function updateCostPanel(){
   const started=!!(G.players&&G.players.length);
   panel.classList.toggle('on',started);
   const pb=document.getElementById('pause-btn');
-  if(pb)pb.disabled=!started||G.winner!==-1||!!G.pause;
+  if(pb){
+    // ゲストは一人1回まで。ホストとオフラインは回数制限なし
+    const usedUp=NET.mode==='guest'&&NET.started&&!!(G.pauseUsed&&G.pauseUsed[NET.myPid]);
+    pb.disabled=!started||G.winner!==-1||!!G.pause||usedUp;
+    pb.textContent=usedUp?'⏸ 一時停止（使用済み）':'⏸ 一時停止（5分）';
+    pb.title=NET.mode==='guest'?'ゲームを最大5分間止めます（参加者は1人1回まで）':'ゲームを最大5分間止めます';
+  }
   const on=G.showCosts!==false&&started;
   body.style.display=on?'':'none';
   const aw=document.getElementById('award-body');
@@ -4070,9 +4093,12 @@ function updateActionButtons(){
   const btns=document.getElementById('act-btns');btns.innerHTML='';
   if(!G.players||G.winner!==-1)return;
   // Hide action buttons during AI turns / other players' turns (online)
-  if(NET.on?G.cur!==NET.myPid:isAI(G.cur)){
+  // オンラインで自分の席がCPU代行中なら、自分の手番でも操作ボタンは出さない
+  if(NET.on?(G.cur!==NET.myPid||isAI(G.cur)):isAI(G.cur)){
     btns.innerHTML=isAI(G.cur)
-      ?'<span style="color:#3a5570;font-size:12px;font-style:italic">🤖 AIターン中...</span>'
+      ?(NET.on&&G.cur===NET.myPid
+        ?'<span style="color:#c8a060;font-size:12px;font-style:italic">🤖 ホストの設定でCPUが代行中...</span>'
+        :'<span style="color:#3a5570;font-size:12px;font-style:italic">🤖 AIターン中...</span>')
       :`<span style="color:#3a5570;font-size:12px;font-style:italic">⏳ ${G.players[G.cur].name} のターン...</span>`;
     return;
   }
@@ -4197,6 +4223,8 @@ const NET={
   names:new Map(),pidByConn:new Map(),
   colorIdx:[0],lobbyColors:null,lobbyYou:0,
   lostSeats:new Map(), // 切断中の席（名前 → プレイヤー番号）。同じ名前で戻れる
+  forceCPU:new Set(),     // ホストが一時停止画面で「CPU代行」にした席
+  rejoinBlocked:new Set(), // ホストが再接続を締め切った席
   autoSB:'off',curTrade:null,
   _tradeTimer:null,_hlTimer:null,_sbHandled:null
 };
@@ -4302,7 +4330,7 @@ function sanitizeIncomingState(g){
     const res={};
     for(const k in(p.resources||{}))res[k]=_num(p.resources[k]);
     return {...p,
-      id:_num(p.id,i),name:_safeName(p.name),color:_safeColor(p.color),isAI:!!p.isAI,_lost:!!p._lost,
+      id:_num(p.id,i),name:_safeName(p.name),color:_safeColor(p.color),isAI:!!p.isAI,_lost:!!p._lost,_proxy:!!p._proxy,
       resources:res,
       devCards:Array.isArray(p.devCards)?p.devCards.map(c=>({type:String(c&&c.type||'?').slice(0,20),played:!!(c&&c.played),newThisTurn:!!(c&&c.newThisTurn)})):[],
       settlements:_num(p.settlements),cities:_num(p.cities),roads:_num(p.roads),
@@ -4318,6 +4346,9 @@ function sanitizeIncomingState(g){
   g.declareWin=g.declareWin==='off'?'off':'on';
   g.diceFx=g.diceFx==='off'?'off':'on';
   g.vpWin=(g.vpWin>=5&&g.vpWin<=20)?_num(g.vpWin):VP_WIN_DEFAULT;
+  const used={};
+  if(g.pauseUsed&&typeof g.pauseUsed==='object')for(const k in g.pauseUsed){const n=_num(k,-1);if(n>=0&&n<6)used[n]=true;}
+  g.pauseUsed=used;
   g.pause=g.pause&&typeof g.pause==='object'
     ?{until:Date.now()+Math.min(PAUSE_MS,Math.max(0,_num(g.pause.left))),by:g.pause.by?_safeName(g.pause.by):''}
     :null;
@@ -4449,6 +4480,7 @@ function hostHandleCall(conn,m){
   if(m.fn==='pauseGame'){_doPause(pid);return;}
   if(m.fn==='resumeGame'){_doResume(pid);return;}
   if(G.pause)return; // 一時停止中はゲームの操作を受け付けない
+  if(G.players[pid].isAI)return; // CPU代行中の席からの操作は受け付けない
   // 継承プロパティ(toString など)がホワイトリストを通過しないよう自前のキーだけを許可する
   if(typeof m.fn!=='string'||!Object.prototype.hasOwnProperty.call(NET_CALLS,m.fn))return;
   const chk=NET_CALLS[m.fn];
@@ -4771,7 +4803,7 @@ function hostOnData(conn,m){
     case 'tradeReact':{
       if(!NET.started)break;
       const pid=NET.pidByConn.get(conn);
-      if(pid!=null)netOnReact(pid,!!m.yes);
+      if(pid!=null&&G.players[pid]&&!G.players[pid].isAI)netOnReact(pid,!!m.yes);
       break;
     }
   }
@@ -4785,10 +4817,19 @@ function hostOnLeave(conn){
   if(pid==null||!G.players||!G.players[pid]||G.winner!==-1)return;
   const p=G.players[pid];
   if(p.isAI&&p._lost)return; // すでに切断処理済み
-  if(p.isAI)return;
-  p.isAI=true;p._lost=true; // CPUが代行しつつ、復帰待ちとして記録する
+  const wasProxy=p.isAI; // ホスト設定でCPU代行中だった席
+  p.isAI=true;p._lost=true;p._proxy=false; // CPUが代行しつつ、復帰待ちとして記録する
   NET.lostSeats.set(p.name,pid);
-  addLog(`🔌 ${p.name} が切断しました — CPUが代行中（同じ名前で再入室すれば復帰できます）`);
+  addLog(`🔌 ${p.name} が切断しました — CPUが代行中`+
+    (NET.rejoinBlocked.has(pid)?'（再接続はホストが締め切っています）':'（同じ名前で再入室すれば復帰できます）'));
+  if(!wasProxy)_seatToCPU(pid);
+  updateUI();render();
+  // 手番の人が抜けたときだけCPUを起動する（他の人の手番の流れは止めずにそのまま続く）
+  if(G.cur===pid&&!wasProxy)checkAI();
+}
+// 人の席をCPUに切り替えるときの後始末（捨て札の自動処理・交渉への返答）
+function _seatToCPU(pid){
+  const p=G.players[pid];
   if(G.discardCurrent===pid){
     const need=Math.floor(sum(p.resources)/2);
     const disc={};let rem=need;
@@ -4799,23 +4840,36 @@ function hostOnLeave(conn){
     if(pendingTrade.proposer===pid)netTradeClose(!!pendingTrade.wasAIProposed);
     else if(!pendingTrade.reactions.hasOwnProperty(pid))netOnReact(pid,false);
   }
-  updateUI();render();checkAI();
 }
 // 同じ名前で入り直してきたゲストを、元の席に復帰させる
 function hostTryRejoin(conn,nm){
   const pid=NET.lostSeats.get(nm);
+  const reject=reason=>{
+    try{conn.send({a:'reject',reason});}catch(_){/*noop*/}
+    setTimeout(()=>{try{conn.close();}catch(_){/*noop*/}},800);
+  };
   if(pid==null||!G.players||!G.players[pid]||G.winner!==-1){
     // 空いている席がない → 参加を断る
-    try{conn.send({a:'reject',reason:'このルームは対戦中です。切断した本人であれば、同じ名前で入り直してください。'});}catch(_){/*noop*/}
-    setTimeout(()=>{try{conn.close();}catch(_){/*noop*/}},800);
+    reject('このルームは対戦中です。切断した本人であれば、同じ名前で入り直してください。');
     return;
+  }
+  if(NET.rejoinBlocked.has(pid)){
+    addLog(`🔒 ${G.players[pid].name} が再接続しようとしましたが、締め切り中のため断りました`);
+    reject('ホストが再接続を締め切っています。');return;
   }
   NET.lostSeats.delete(nm);
   if(NET.conns.indexOf(conn)===-1)NET.conns.push(conn);
   NET.pidByConn.set(conn,pid);
   const p=G.players[pid];
-  p.isAI=false;p._lost=false;
-  addLog(`🔌 ${p.name} が再接続しました — 操作を本人に戻します`);
+  p._lost=false;
+  // ホストが「CPU代行」に設定している席は、戻っても観戦のままCPUが続ける
+  if(NET.forceCPU.has(pid)){
+    p.isAI=true;p._proxy=true;
+    addLog(`🔌 ${p.name} が再接続しました — ホストの設定によりCPUが代行を続けます`);
+  } else {
+    p.isAI=false;p._proxy=false;
+    addLog(`🔌 ${p.name} が再接続しました — 操作を本人に戻します`);
+  }
   try{conn.send({a:'start',pid,R,cw:canvas.width,ch:canvas.height,st:serializeState(pid)});}catch(_){/*noop*/}
   updateUI();render();
   // 復帰した席が手番中なら、CPUの自動処理を止めて本人の操作を待つ
@@ -4837,7 +4891,7 @@ function guestOnData(m){
       addLog(rejoined?'🔌 再接続しました':'🌐 オンラインゲーム開始！');
       break;
     }
-    case 'reject':netDead(String(m.reason||'参加できませんでした').slice(0,120),false);break;
+    case 'reject':NET._rejected=true;netDead(String(m.reason||'参加できませんでした').slice(0,120),false);break;
     case 'state':if(NET.started)applyState(m.st);break;
     case 'log':if(NET.started)addLog(m.msg);break;
     case 'fx':if(NET.started)guestFx(m);break;
@@ -5074,6 +5128,8 @@ function netJoinRoom(code){
 }
 function netDead(msg,canRetry=true){
   if(G.winner!==-1)return;
+  // ホストに断られた理由の表示を、その後の切断・タイムアウトの案内で上書きしない
+  if(NET._rejected&&canRetry)return;
   document.getElementById('net-dead-ov')?.remove();
   const d=document.createElement('div');
   d.id='net-dead-ov';
@@ -5091,6 +5147,7 @@ function netDead(msg,canRetry=true){
 function netReconnect(){
   const code=NET.code,name=NET.name;
   if(!code||!name){location.reload();return;}
+  NET._rejected=false;
   document.getElementById('net-dead-ov')?.remove();
   try{if(NET.peer)NET.peer.destroy();}catch(_){/*noop*/}
   NET.peer=null;NET.hostConn=null;NET.started=false;
@@ -5148,6 +5205,7 @@ function netStartGame(){
   G.showOppRes=G.openHands==='on';
   NET.myPid=G._defKeys.indexOf('H');
   NET.pidByConn=new Map();
+  NET.forceCPU=new Set();NET.rejoinBlocked=new Set();
   NET.conns.forEach((c,i)=>{NET.pidByConn.set(c,G._defKeys.indexOf('C'+i));});
   NET.conns.forEach(c=>{const gp=NET.pidByConn.get(c);if(c.open)c.send({a:'start',pid:gp,R,cw:canvas.width,ch:canvas.height,st:serializeState(gp)});});
   updateUI();render();
@@ -5168,17 +5226,30 @@ for(const fn of['checkAI','runAITurn','aiMainAction','aiSpecialBuildAction','aiM
   const orig=window[fn];
   if(typeof orig!=='function')continue;
   window[fn]=function(...args){
-    if(_pausedHere()){const g=G;_pauseQueue.push(()=>{if(G===g)orig.apply(this,args);});return;}
+    if(_pausedHere()){
+      // 同じ呼び出しが重なった場合は1回にまとめる（再開時にCPUが二重に動かないように）
+      const key=fn+JSON.stringify(args);
+      if(_pauseQueue.some(e=>e.key===key))return;
+      const g=G;_pauseQueue.push({key,run:()=>{if(G===g)orig.apply(this,args);}});return;
+    }
     return orig.apply(this,args);
   };
 }
 function pauseGame(){_doPause(NET.on?NET.myPid:null);}
 function resumeGame(){_doResume(NET.on?NET.myPid:null);}
+let _pauseCurWasAI=false;
 function _doPause(pid){
   if(!G.players||!G.players.length||G.winner!==-1||G.pause)return;
+  // オンラインのゲストは一人1回まで（ホストは制限なし）
+  const isGuest=NET.on&&pid!=null&&pid!==NET.myPid;
+  if(isGuest){
+    if(G.pauseUsed&&G.pauseUsed[pid])return;
+    G.pauseUsed={...(G.pauseUsed||{}),[pid]:true};
+  }
   const by=pid!=null&&G.players[pid]?G.players[pid].name:'';
   G.pause={until:Date.now()+PAUSE_MS,by};
-  addLog(`⏸ ${by?by+' が':''}ゲームを一時停止しました（最大5分）`);
+  _pauseCurWasAI=isAI(G.cur);
+  addLog(`⏸ ${by?by+' が':''}ゲームを一時停止しました（最大5分）`+(isGuest?' ※参加者の一時停止は1人1回まで':''));
   updateUI();
 }
 function _doResume(pid,auto=false){
@@ -5186,9 +5257,67 @@ function _doResume(pid,auto=false){
   G.pause=null;
   const by=pid!=null&&G.players[pid]?G.players[pid].name:'';
   addLog(auto?'⏱ 5分たったのでゲームを再開しました':`▶ ${by?by+' が':''}ゲームを再開しました`);
-  updateUI();
+  updateUI();render();
   const q=_pauseQueue;_pauseQueue=[];
-  for(const f of q){try{f();}catch(e){console.error('resume error:',e);}}
+  // 停止中に手番の席を人からCPUに切り替えた場合は、ここでCPUを動かし始める
+  const kick=!_pauseCurWasAI&&isAI(G.cur)&&!q.some(e=>e.key.startsWith('checkAI')||e.key.startsWith('runAITurn'));
+  for(const e of q){try{e.run();}catch(err){console.error('resume error:',err);}}
+  if(kick)checkAI();
+}
+// ---- ホスト: 一時停止中の席の設定（CPU代行・再接続） ----
+function _guestPids(){
+  return (G._defKeys||[]).map((k,i)=>typeof k==='string'&&k[0]==='C'?i:-1).filter(i=>i>=0&&G.players[i]);
+}
+function hostSetSeatMode(pid,mode){
+  if(NET.mode!=='host'||!G.pause||!_guestPids().includes(pid))return;
+  const p=G.players[pid];
+  const online=!!connOf(pid);
+  if(mode==='cpu'){
+    if(NET.forceCPU.has(pid))return;
+    NET.forceCPU.add(pid);
+    if(!p.isAI){p.isAI=true;p._proxy=true;_seatToCPU(pid);}
+    addLog(`🤖 ${p.name} の操作をCPUが代行します（ホスト設定）`);
+  } else {
+    if(!NET.forceCPU.has(pid))return;
+    NET.forceCPU.delete(pid);
+    if(online&&p.isAI&&!p._lost){p.isAI=false;p._proxy=false;addLog(`👤 ${p.name} の操作を本人に戻しました`);}
+    else addLog(`👤 ${p.name} が再接続したら本人に操作を戻します`);
+  }
+  updateUI();render();
+}
+function hostSetRejoin(pid,allow){
+  if(NET.mode!=='host'||!G.pause||!_guestPids().includes(pid))return;
+  const p=G.players[pid];
+  if(allow===!NET.rejoinBlocked.has(pid))return;
+  if(allow)NET.rejoinBlocked.delete(pid);else NET.rejoinBlocked.add(pid);
+  addLog(allow?`🔓 ${p.name} の再接続を許可しました`:`🔒 ${p.name} の再接続を締め切りました`);
+  updateUI();
+}
+function _renderHostPausePanel(){
+  const el=document.getElementById('pz-host');
+  if(!el)return;
+  if(NET.mode!=='host'||!NET.started){el.innerHTML='';el.style.display='none';return;}
+  const pids=_guestPids();
+  el.style.display='';
+  if(!pids.length){el.innerHTML='<div class="pz-h">🛠 ホスト設定</div><div class="pz-empty">参加者はいません</div>';return;}
+  let h='<div class="pz-h">🛠 ホスト設定 <span>参加者ごとの操作と再接続</span></div>'+
+    '<table class="pz-tbl"><tr><th>参加者</th><th>状態</th><th>操作</th><th>再接続</th></tr>';
+  for(const pid of pids){
+    const p=G.players[pid];
+    const online=!!connOf(pid);
+    const cpu=NET.forceCPU.has(pid);
+    const allow=!NET.rejoinBlocked.has(pid);
+    const state=online?(p.isAI?'<span class="pz-st warn">🟡 接続中（CPU代行）</span>':'<span class="pz-st ok">🟢 接続中</span>')
+                      :'<span class="pz-st ng">🔌 切断中（CPU代行）</span>';
+    const seg=(on,label,fn,title)=>`<button class="pz-seg${on?' on':''}" onclick="${fn}" title="${title}">${label}</button>`;
+    h+=`<tr><td class="pz-nm" style="color:${p.color}">${escapeHtml(p.name)}</td><td>${state}</td>`+
+      `<td>${seg(!cpu,'👤 本人',`hostSetSeatMode(${pid},'human')`,online?'本人が操作します':'再接続したら本人に戻します')}`+
+      `${seg(cpu,'🤖 CPU',`hostSetSeatMode(${pid},'cpu')`,'CPUが代わりに操作します（本人は観戦）')}</td>`+
+      `<td>${seg(allow,'🔓 許可',`hostSetRejoin(${pid},true)`,'切断しても同じ名前で入り直せば戻れます')}`+
+      `${seg(!allow,'🔒 拒否',`hostSetRejoin(${pid},false)`,'切断したら戻れません（CPUが最後まで代行）')}</td></tr>`;
+  }
+  h+='</table><div class="pz-empty">切断した人は、同じルームコード・同じ名前で入り直すと復帰できます</div>';
+  el.innerHTML=h;
 }
 function updatePauseOverlay(){
   let ov=document.getElementById('pause-ov');
@@ -5202,11 +5331,13 @@ function updatePauseOverlay(){
     ov=document.createElement('div');ov.id='pause-ov';
     ov.innerHTML='<div class="pz-box"><div class="pz-title">⏸ 一時停止中</div>'+
       '<div class="pz-time" id="pz-time">5:00</div><div class="pz-by" id="pz-by"></div>'+
+      '<div id="pz-host"></div>'+
       '<button class="btn-p" onclick="resumeGame()">▶ 再開する</button>'+
       '<div class="pz-note">時間になると自動で再開します</div></div>';
     document.body.appendChild(ov);
   }
   ov.classList.remove('hidden');
+  _renderHostPausePanel();
   document.getElementById('pz-by').textContent=G.pause.by?`${G.pause.by} が一時停止しました`:'';
   const tick=()=>{
     if(!G.pause){updatePauseOverlay();return;}
