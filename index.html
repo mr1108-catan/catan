@@ -338,6 +338,21 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 .pc-grid.compact2 .pc .prow2 .chip{font-size:13px;padding:2px 5px}
 .pc-grid.compact .pc .used-col .uc-row{font-size:12.5px}
 .pc-grid.compact2 .pc .used-col .uc-row{font-size:11.5px;line-height:1.2}
+/* 資源の内訳を出すカード: チップ2段分の高さを常に確保し、手札の増減でカードの大きさが変わらないようにする */
+.pc .prow2.res{min-height:65px;align-content:flex-start}
+.pc-grid.compact .pc .prow2.res{min-height:55px}
+.pc-grid.compact2 .pc .prow2.res{min-height:46px}
+/* 全資源＋発展カード＋勝利点カードなどで2段に収まらないときは、そのカードのチップだけ小さくする */
+.pc .prow2.dense .chip{font-size:15px;padding:3px 7px}
+.pc .prow2.dense2{gap:3px}
+.pc .prow2.dense2 .chip{font-size:13px;padding:2px 5px}
+.pc-grid.compact .pc .prow2.dense .chip{font-size:13px;padding:2px 5px}
+.pc-grid.compact .pc .prow2.dense2 .chip{font-size:12px;padding:2px 3px}
+.pc-grid.compact2 .pc .prow2.dense .chip{font-size:12px;padding:2px 3px}
+.pc-grid.compact2 .pc .prow2.dense2 .chip{font-size:11px;padding:1px 3px}
+/* 枚数が2桁ばかりで右に使用済みカード欄もある、などの極端な場合の最小サイズ */
+.pc-grid .pc .prow2.dense3{gap:2px}
+.pc-grid .pc .prow2.dense3 .chip{font-size:11px;padding:1px 2px;gap:1px}
 /* 少しだけ入りきらないときは、文字の大きさは通常のまま上下の余白だけ詰める */
 #mid-left .pc-grid.snug .pc{padding-top:4px;padding-bottom:4px}
 .pc-grid.snug .pc .pieces,.pc-grid.snug .pc .prow2{margin-top:2px}
@@ -4016,7 +4031,8 @@ function makePlayerCard(p){
         '<span title="都市の残り">🏙<b>'+p.cities+'</b></span>'+
         '<span title="街道の残り">🛤<b>'+p.roads+'</b></span>'+
       '</div>'+
-      (resHtml?'<div class="prow2">'+resHtml+'</div>':'')+
+      // 資源の内訳を出すカードは、チップの枚数が変わってもカードの高さが変わらないよう常に2段分の場所を取る
+      (showRes?'<div class="prow2 res">'+resHtml+'</div>':(resHtml?'<div class="prow2">'+resHtml+'</div>':''))+
     '</div>'+
     usedCol;
   if(isMe(p.id))d.classList.add('self');
@@ -4046,8 +4062,20 @@ function updatePlayerCards(){
   // 通常表示で並べ、1画面に収まらないときだけ段階的に詰める
   // （ゆとり → 通常 → 余白だけ詰め → 文字も小さく → さらに詰め）
   const levels=['roomy','','snug','compact','compact compact2'];
+  // 資源チップが2段に収まらないカードは、そのカードのチップだけ一段ずつ小さくする
+  const rows=el=>new Set([...el.children].map(c=>c.offsetTop)).size;
+  const fitChips=()=>{
+    for(const el of grid.querySelectorAll('.prow2.res')){
+      el.classList.remove('dense','dense2','dense3');
+      for(const d of['dense','dense2','dense3']){
+        if(rows(el)<=2)break;
+        el.classList.remove('dense','dense2');el.classList.add(d);
+      }
+    }
+  };
   for(const lv of levels){
     grid.className='pc-grid'+(lv?' '+lv:'');
+    fitChips();
     if(!over())break;
   }
 }
