@@ -314,14 +314,18 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 .pc{display:flex;align-items:stretch;gap:6px}
 .pc .pc-main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;justify-content:center}
 /* 上部のボタンを外して空いた分を、収まる場合に限り各カードの上下の余白として配分する */
-#mid-left .pc-grid.roomy .pc{padding-top:10px;padding-bottom:10px}
+/* カードの上下余白 = 各段階の基本余白 + 下の空きを全カードで等分した分(--pcx)。列の下に空きを残さない */
+#mid-left .pc-grid .pc{padding-top:calc(7px + var(--pcx,0px));padding-bottom:calc(7px + var(--pcx,0px))}
+#mid-left .pc-grid.compact .pc{padding-top:calc(5px + var(--pcx,0px));padding-bottom:calc(5px + var(--pcx,0px))}
+#mid-left .pc-grid.compact2 .pc{padding-top:calc(3px + var(--pcx,0px));padding-bottom:calc(3px + var(--pcx,0px))}
 /* 1行目: 目印 → 名前 → すぐ右に勝利点 */
 .pc .prow1{display:flex;align-items:center;gap:6px;min-width:0}
 .pc .prow1 .pmark{flex-shrink:0}
 .pc .prow1 .pn{font-size:15px;font-weight:800;white-space:nowrap;overflow:visible}
 .pc .pvp{font-size:20px;color:#f4d060;font-weight:900;white-space:nowrap;flex-shrink:0}
 .pc .prow2{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;align-items:center}
-/* 使用済み発展カード: カード右側に種類ごとに縦に並べる */
+/* 使用済み発展カード: カード右側に種類ごとに縦に並べる（カードが縦に伸びても枠は中身の高さのまま中央に置く） */
+.pc .used-col{align-self:center}
 .pc .used-col{flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:40px;
   padding:4px 6px;border-radius:7px;background:rgba(90,48,128,.28);border:1px solid rgba(170,120,220,.42)}
 .pc .used-col .uc-row{display:flex;align-items:center;justify-content:space-between;gap:5px;
@@ -354,7 +358,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 .pc-grid .pc .prow2.dense3{gap:2px}
 .pc-grid .pc .prow2.dense3 .chip{font-size:11px;padding:1px 2px;gap:1px}
 /* 少しだけ入りきらないときは、文字の大きさは通常のまま上下の余白だけ詰める */
-#mid-left .pc-grid.snug .pc{padding-top:4px;padding-bottom:4px}
+#mid-left .pc-grid.snug .pc{padding-top:calc(4px + var(--pcx,0px));padding-bottom:calc(4px + var(--pcx,0px))}
 .pc-grid.snug .pc .pieces,.pc-grid.snug .pc .prow2{margin-top:2px}
 /* 画面が低いときはカード全体の余白を詰める */
 .pc-grid.compact .pc{padding:5px 8px}
@@ -4061,7 +4065,7 @@ function updatePlayerCards(){
   const over=()=>lp.scrollHeight>lp.clientHeight+1;
   // 通常表示で並べ、1画面に収まらないときだけ段階的に詰める
   // （ゆとり → 通常 → 余白だけ詰め → 文字も小さく → さらに詰め）
-  const levels=['roomy','','snug','compact','compact compact2'];
+  const levels=['','snug','compact','compact compact2'];
   // 資源チップが2段に収まらないカードは、そのカードのチップだけ一段ずつ小さくする
   const rows=el=>new Set([...el.children].map(c=>c.offsetTop)).size;
   const fitChips=()=>{
@@ -4073,10 +4077,21 @@ function updatePlayerCards(){
       }
     }
   };
+  grid.style.setProperty('--pcx','0px');
   for(const lv of levels){
     grid.className='pc-grid'+(lv?' '+lv:'');
     fitChips();
     if(!over())break;
+  }
+  // 残った空きを全カードに等分して上下余白に足し、列の下に空きを残さない
+  // （全カード同じ量なので、自分のカードの中身が変わっても他の人のカードの大きさは変わらない）
+  const n=grid.children.length;
+  if(n&&!over()){
+    const padB=parseFloat(getComputedStyle(lp).paddingBottom)||0;
+    const free=lp.clientHeight-padB-(grid.offsetTop+grid.offsetHeight);
+    let per=Math.max(0,Math.min(30,Math.floor(free/n/2*10)/10));
+    grid.style.setProperty('--pcx',per+'px');
+    while(per>0&&over()){per=Math.max(0,per-0.5);grid.style.setProperty('--pcx',per+'px');}
   }
 }
 function animateResourceGain(pid,gains){
