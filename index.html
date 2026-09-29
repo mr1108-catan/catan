@@ -98,6 +98,41 @@ canvas{display:block;position:relative;z-index:1}
 .ov.side .trade-label{width:68px;font-size:12px}
 .ov.side .two-col{flex-wrap:wrap!important}
 .ov.side .two-col>div{flex:1 1 100%!important}
+/* 取引入力表（銀行交換・プレイヤー間交渉）: 1資源1行で「渡す」「受け取る」を並べ、スクロールを不要にする */
+.tt-hint{font-size:11.5px;color:#8aaac0;margin:-6px 0 8px}
+.tt-head{display:grid;grid-template-columns:1fr 116px 116px;gap:6px;font-size:11.5px;font-weight:700;padding:0 6px 4px}
+.tt-head .hg{color:#ff9a7a;text-align:center}.tt-head .hw{color:#7ee0a0;text-align:center}.tt-head .hr{color:#8aaac0}
+.tt-row{display:grid;grid-template-columns:1fr 116px 116px;gap:6px;align-items:center;padding:5px 6px;margin-bottom:5px;
+  border-radius:10px;background:#0a1a2c;border:1px solid #16304a;transition:background .15s,border-color .15s}
+.tt-row.g{background:rgba(224,112,80,.10);border-color:rgba(224,112,80,.45)}
+.tt-row.w{background:rgba(80,192,128,.10);border-color:rgba(80,192,128,.45)}
+.tt-res{display:flex;flex-direction:column;gap:2px;border-left:4px solid var(--rc);padding-left:8px;min-width:0}
+.tt-nm{font-size:14.5px;font-weight:800;color:#eef4fa;white-space:nowrap}
+.tt-sub{font-size:11px;color:#8aaac0;display:flex;gap:5px;align-items:center;white-space:nowrap}
+.tt-sub b{color:#fff;font-size:12.5px}
+.tt-tag{font-size:10.5px;font-weight:800;padding:0 5px;border-radius:4px;background:#1c3d5a;color:#c8dff0;line-height:16px}
+.tt-tag.port{background:#2e6a3a;color:#c8ffd0}
+.tt-tag.none{background:#5a2020;color:#ffc0c0}
+.tt-step{display:flex;align-items:stretch;border-radius:9px;overflow:hidden;border:1px solid #2e5a80;background:#10263d}
+.tt-step button{flex:0 0 36px;height:40px;font-size:21px;font-weight:900;border:none;background:#1c3d5a;color:#eef4fa;cursor:pointer;padding:0;line-height:1}
+.tt-step button:hover:not(:disabled){background:#2e6aa0}
+.tt-step button:disabled{opacity:.28;cursor:default}
+.tt-step input{flex:1 1 auto;width:0;min-width:0;height:40px;text-align:center;font-size:19px;font-weight:900;background:transparent;border:none;color:#fff;padding:0;-moz-appearance:textfield}
+.ov.side .tt-step input[type=number]::-webkit-inner-spin-button,
+.ov.side .tt-step input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;display:none}
+.tt-row.g .tt-step.give{border-color:#e07050}.tt-row.g .tt-step.give input{color:#ffb49a}
+.tt-row.w .tt-step.get{border-color:#50c080}.tt-row.w .tt-step.get input{color:#a8f0c4}
+.tt-sum{margin-top:6px;padding:8px 12px;border-radius:10px;background:#071525;border:1px solid #1a3a5c;display:flex;align-items:center;gap:10px}
+.tt-sum .tt-sum-main{flex:1;min-width:0}
+.tt-sum .tt-line{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:15px;font-weight:800;min-height:22px}
+.tt-sum .tt-line .ar{color:#8aaac0}
+.tt-sum .tt-line .ph{font-size:12px;font-weight:400;color:#6a8aa0}
+.tt-sum .tt-msg{font-size:12px;margin-top:3px;font-weight:700}
+.tt-sum .tt-msg.ok{color:#7ee0a0}.tt-sum .tt-msg.ng{color:#f4d060}
+.tt-sum .tt-clear{flex:0 0 auto;font-size:11.5px;padding:5px 9px}
+.tt-btns button{font-size:15px;padding:11px 18px;font-weight:800}
+.tt-btns .btn-p{flex:1}
+.tt-btns .btn-p:disabled{opacity:.4;cursor:default;filter:grayscale(.5)}
 /* 手番順ストリップ */
 /* 手番順は必ず1行に収める（幅が足りなければ横スクロール）*/
 .turn-strip{display:flex;flex-wrap:nowrap;gap:3px;margin-bottom:8px;padding:6px 8px;background:#071525;border-radius:8px;border:1px solid #1a3a5c;
@@ -492,14 +527,11 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 <div class="ov side hidden" id="trade-ov">
   <div class="modal" style="max-width:min(96vw,820px);max-height:none;overflow-y:visible">
     <h3>🔄 銀行・港との取引</h3>
-    <div id="trade-hand-display" style="margin-bottom:8px;padding:8px 10px;background:#071525;border-radius:8px;border:1px solid #1a3a5c"></div>
-    <p style="font-size:12px;color:#8aaac0;margin-bottom:10px">港があれば3:1や2:1で交換できます</p>
-    <div class="two-col" style="display:flex;gap:16px;flex-wrap:nowrap">
-      <div style="flex:1;min-width:0"><div class="trade-sect"><div class="trade-sect-h">渡す資源</div><div class="trade-grid" id="trade-give"></div></div></div>
-      <div style="flex:1;min-width:0"><div class="trade-sect"><div class="trade-sect-h">受け取る資源</div><div class="trade-grid" id="trade-get"></div></div></div>
-    </div>
-    <div class="modal-btns">
-      <button class="btn-p" onclick="executeTrade()">取引実行</button>
+    <p class="tt-hint">「渡す」は交換比率の枚数ずつ増えます（港があれば 3:1・2:1）</p>
+    <div id="trade-table"></div>
+    <div class="tt-sum" id="trade-sum"></div>
+    <div class="modal-btns tt-btns">
+      <button class="btn-p" id="trade-exec" onclick="executeTrade()">🔄 取引実行</button>
       <button class="btn-s" onclick="closeModal('trade-ov')">キャンセル</button>
     </div>
   </div>
@@ -550,17 +582,15 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
     <!-- Scrollable area: player ref + resource inputs -->
     <div style="overflow-y:auto;flex:1;margin:0 -4px;padding:0 4px">
       <div class="turn-strip" id="ptrade-turn-order"></div>
-      <div id="ptrade-player-ref" style="margin-bottom:8px;padding:8px 10px;background:#071525;border-radius:8px;border:1px solid #1a3a5c"></div>
-      <div class="two-col" style="display:flex;gap:16px;flex-wrap:nowrap">
-        <div style="flex:1;min-width:0"><div class="trade-sect"><div class="trade-sect-h">📤 あなたが渡す資源</div><div class="trade-grid" id="ptrade-give"></div></div></div>
-        <div style="flex:1;min-width:0"><div class="trade-sect"><div class="trade-sect-h">🎁 あなたが受け取る資源</div><div class="trade-grid" id="ptrade-get"></div></div></div>
-      </div>
+      <div id="ptrade-player-ref" style="display:none"></div>
+      <div id="ptrade-table"></div>
+      <div class="tt-sum" id="ptrade-sum"></div>
     </div>
     <!-- Sticky footer: timer + action buttons -->
-    <div style="border-top:1px solid #1a3a5c;margin-top:8px;padding:10px 0 18px">
+    <div style="border-top:1px solid #1a3a5c;margin-top:8px;padding:8px 0 14px">
       <div class="trade-tmr" style="text-align:center;color:#f4a460;font-size:14px;font-weight:700;min-height:20px;margin-bottom:6px"></div>
-      <div class="modal-btns" style="margin-top:0">
-        <button class="btn-p" onclick="proposePlayerTrade()">📨 全員に提案する</button>
+      <div class="modal-btns tt-btns" style="margin-top:0">
+        <button class="btn-p" id="ptrade-exec" onclick="proposePlayerTrade()">📨 全員に提案する</button>
         <button class="btn-s" onclick="closePtradeProposal()">キャンセル</button>
       </div>
     </div>
@@ -2185,32 +2215,113 @@ function getTradeRatio(p,res){
   }
   return best;
 }
+// ---- 取引入力表（銀行交換・プレイヤー間交渉で共通）----
+// 1資源1行に「手持ち」「渡す −[n]+」「受け取る −[n]+」を並べる。入力欄のIDは従来どおり
+const _TT={};
+function buildTradeTable(kind,cfg){
+  _TT[kind]=cfg;
+  const hand=cfg.hand;
+  let h='<div class="tt-head"><span class="hr">資源</span><span class="hg">📤 渡す</span><span class="hw">📥 受け取る</span></div>';
+  for(const r of RES){
+    h+=`<div class="tt-row" id="tt-${kind}-${r}">`+
+      `<div class="tt-res" style="--rc:${RES_COLOR[r]}"><span class="tt-nm">${RES_EMOJI[r]} ${RES_JP[r]}</span>`+
+        `<span class="tt-sub">手持 <b>${hand[r]}</b>${cfg.tags?cfg.tags(r):''}</span></div>`+
+      `<div class="tt-step give"><button type="button" onclick="ttStep('${kind}','give','${r}',-1)" aria-label="${RES_JP[r]}を渡す枚数を減らす">−</button>`+
+        `<input type="number" id="${cfg.giveId(r)}" min="0" value="0" inputmode="numeric" oninput="ttRefresh('${kind}')" onchange="ttClamp('${kind}','give','${r}')">`+
+        `<button type="button" onclick="ttStep('${kind}','give','${r}',1)" aria-label="${RES_JP[r]}を渡す枚数を増やす">＋</button></div>`+
+      `<div class="tt-step get"><button type="button" onclick="ttStep('${kind}','get','${r}',-1)" aria-label="${RES_JP[r]}を受け取る枚数を減らす">−</button>`+
+        `<input type="number" id="${cfg.getId(r)}" min="0" value="0" inputmode="numeric" oninput="ttRefresh('${kind}')" onchange="ttClamp('${kind}','get','${r}')">`+
+        `<button type="button" onclick="ttStep('${kind}','get','${r}',1)" aria-label="${RES_JP[r]}を受け取る枚数を増やす">＋</button></div>`+
+      `</div>`;
+  }
+  document.getElementById(cfg.tableId).innerHTML=h;
+  ttRefresh(kind);
+}
+function _ttEl(kind,side,r){const c=_TT[kind];return c&&document.getElementById(side==='give'?c.giveId(r):c.getId(r));}
+function _ttVal(kind,side,r){const el=_ttEl(kind,side,r);return el?Math.max(0,parseInt(el.value)||0):0;}
+function _ttStepOf(kind,side,r){const c=_TT[kind];return side==='give'&&c.giveStep?c.giveStep(r):1;}
+function _ttMax(kind,side,r){
+  const c=_TT[kind];
+  if(side==='give'){const st=_ttStepOf(kind,side,r);return Math.floor(c.hand[r]/st)*st;}
+  return c.getMax?c.getMax(r):19;
+}
+function ttStep(kind,side,r,dir){
+  const el=_ttEl(kind,side,r);if(!el)return;
+  const st=_ttStepOf(kind,side,r);
+  const cur=_ttVal(kind,side,r);
+  // 端数が入っていた場合は比率の倍数にそろえてから増減する
+  const base=dir>0?Math.floor(cur/st)*st:Math.ceil(cur/st)*st;
+  const v=Math.max(0,Math.min(_ttMax(kind,side,r),base+dir*st));
+  el.value=v;
+  // 同じ資源を渡して受け取ることはできないので、反対側は自動で0にする
+  if(v>0){const o=_ttEl(kind,side==='give'?'get':'give',r);if(o)o.value=0;}
+  ttRefresh(kind);
+}
+function ttClamp(kind,side,r){
+  const el=_ttEl(kind,side,r);if(!el)return;
+  el.value=Math.max(0,Math.min(_ttMax(kind,side,r),_ttVal(kind,side,r)));
+  if(+el.value>0){const o=_ttEl(kind,side==='give'?'get':'give',r);if(o)o.value=0;}
+  ttRefresh(kind);
+}
+function ttClear(kind){
+  for(const r of RES){for(const s of['give','get']){const el=_ttEl(kind,s,r);if(el)el.value=0;}}
+  ttRefresh(kind);
+}
+function ttRefresh(kind){
+  const c=_TT[kind];if(!c)return;
+  const give={},get={};
+  for(const r of RES){
+    give[r]=_ttVal(kind,'give',r);get[r]=_ttVal(kind,'get',r);
+    const row=document.getElementById(`tt-${kind}-${r}`);
+    if(!row)continue;
+    row.classList.toggle('g',give[r]>0);row.classList.toggle('w',get[r]>0);
+    for(const s of['give','get']){
+      const bs=row.querySelectorAll(`.tt-step.${s} button`);
+      const v=s==='give'?give[r]:get[r];
+      bs[0].disabled=v<=0;
+      bs[1].disabled=v+_ttStepOf(kind,s,r)>_ttMax(kind,s,r);
+    }
+  }
+  const fmt=o=>RES.filter(r=>o[r]>0).map(r=>`<span>${RES_EMOJI[r]}×${o[r]}</span>`).join(' ');
+  const gs=fmt(give),ws=fmt(get);
+  const res=c.check(give,get); // {ok,msg}
+  const sum=document.getElementById(c.sumId);
+  if(sum){
+    sum.innerHTML='<div class="tt-sum-main"><div class="tt-line">'+
+      `<span style="color:#ff9a7a">📤</span>${gs||'<span class="ph">渡す資源を選択</span>'}`+
+      `<span class="ar">➜</span><span style="color:#7ee0a0">📥</span>${ws||'<span class="ph">受け取る資源を選択</span>'}</div>`+
+      `<div class="tt-msg ${res.ok?'ok':'ng'}">${res.msg}</div></div>`+
+      ((gs||ws)?`<button type="button" class="btn-s tt-clear" onclick="ttClear('${kind}')">↺ クリア</button>`:'');
+  }
+  const btn=document.getElementById(c.btnId);
+  if(btn)btn.disabled=!res.ok;
+}
 function showTradeModal(){
   const p=G.players[G.cur];
-  // Show current hand
-  const handEl=document.getElementById('trade-hand-display');
-  if(handEl){
-    const chips=RES.filter(r=>p.resources[r]>0)
-      .map(r=>`<span style="display:inline-flex;align-items:center;gap:3px;background:${RES_COLOR[r]};color:#fff;border-radius:5px;padding:3px 8px;font-size:13px;font-weight:700">${RES_EMOJI[r]} ${RES_JP[r]} <strong style="font-size:16px">×${p.resources[r]}</strong></span>`)
-      .join('');
-    handEl.innerHTML=`<div style="font-size:11px;color:#8aaac0;margin-bottom:6px">💼 手持ち資源</div><div style="display:flex;flex-wrap:wrap;gap:5px">${chips||'<span style="color:#8aaac0;font-size:12px">資源なし</span>'}</div>`;
-  }
-  const gDiv=document.getElementById('trade-give'),gDiv2=document.getElementById('trade-get');
-  gDiv.innerHTML='';gDiv2.innerHTML='';
-  for(const r of RES){
-    const ratio=getTradeRatio(p,r);
-    const row1=document.createElement('div');row1.className='trade-row';
-    row1.innerHTML=`<span class="trade-label">${RES_EMOJI[r]} ${RES_JP[r]}</span><span class="trade-ratio">${ratio}:1</span><input type="number" id="give-${r}" class="tres" min="0" max="${p.resources[r]}" value="0">`;
-    gDiv.appendChild(row1);
-    const row2=document.createElement('div');row2.className='trade-row';
-    // ゲージ表示のゲームでは銀行の残り枚数を伏せる（0枚だけは取引不可として明示）
-    const numView=bankViewMode()==='num';
-    const stockLabel=numView?`(残${G.bank[r]})`:(G.bank[r]===0?'<span style="color:#ff8888">なし</span>':'　');
-    // ゲージ表示では max にも正確な枚数を出さない（不足時は取引実行のチェックで弾く）
-    const maxAttr=numView?G.bank[r]:(G.bank[r]===0?0:24);
-    row2.innerHTML=`<span class="trade-label">${RES_EMOJI[r]} ${RES_JP[r]}</span><span class="trade-ratio">${stockLabel}</span><input type="number" id="get-${r}" class="tres" min="0" max="${maxAttr}" value="0">`;
-    gDiv2.appendChild(row2);
-  }
+  // ゲージ表示のゲームでは銀行の残り枚数を伏せる（0枚だけは取引不可として明示）
+  const numView=bankViewMode()==='num';
+  buildTradeTable('bank',{
+    tableId:'trade-table',sumId:'trade-sum',btnId:'trade-exec',
+    hand:p.resources,giveId:r=>`give-${r}`,getId:r=>`get-${r}`,
+    giveStep:r=>getTradeRatio(p,r),
+    // ゲージ表示では上限にも正確な枚数を出さない（不足時は取引実行のチェックで弾く）
+    getMax:r=>numView?G.bank[r]:(G.bank[r]===0?0:19),
+    tags:r=>{
+      const ratio=getTradeRatio(p,r);
+      return `<span class="tt-tag${ratio<4?' port':''}" title="${ratio}枚で1枚と交換">${ratio}:1</span>`+
+        (numView?`<span class="tt-tag" title="銀行の残り">銀行${G.bank[r]}</span>`
+                :(G.bank[r]===0?'<span class="tt-tag none">銀行なし</span>':''));
+    },
+    check:(give,get)=>{
+      let units=0,cnt=0,gv=0;
+      for(const r of RES){units+=give[r]/getTradeRatio(p,r);cnt+=get[r];gv+=give[r];}
+      if(!gv&&!cnt)return {ok:false,msg:'＋ボタンで枚数を選んでください'};
+      for(const r of RES)if(give[r]%getTradeRatio(p,r))return {ok:false,msg:`${RES_JP[r]}は${getTradeRatio(p,r)}枚単位で渡してください`};
+      if(units>cnt)return {ok:false,msg:`受け取る資源をあと ${units-cnt} 枚選べます`};
+      if(units<cnt)return {ok:false,msg:`受け取る枚数が多すぎます（あと ${cnt-units} 枚分の資源を渡す必要があります）`};
+      return {ok:true,msg:'✅ この内容で交換できます'};
+    }
+  });
   document.getElementById('trade-ov').classList.remove('hidden');
 }
 function executeTrade(){
@@ -2512,16 +2623,18 @@ let pendingTrade=null;
 
 function showPlayerTradeModal(){
   const p=G.players[G.cur];
-  const gDiv=document.getElementById('ptrade-give'),wDiv=document.getElementById('ptrade-get');
-  gDiv.innerHTML='';wDiv.innerHTML='';
-  for(const r of RES){
-    const r1=document.createElement('div');r1.className='trade-row';
-    r1.innerHTML=`<span class="trade-label">${RES_EMOJI[r]} ${RES_JP[r]}</span><span class="trade-ratio">(手持:${p.resources[r]})</span><input type="number" id="ptg-${r}" class="tres" min="0" max="${p.resources[r]}" value="0">`;
-    gDiv.appendChild(r1);
-    const r2=document.createElement('div');r2.className='trade-row';
-    r2.innerHTML=`<span class="trade-label">${RES_EMOJI[r]} ${RES_JP[r]}</span><span class="trade-ratio">　</span><input type="number" id="ptw-${r}" class="tres" min="0" max="10" value="0">`;
-    wDiv.appendChild(r2);
-  }
+  buildTradeTable('pt',{
+    tableId:'ptrade-table',sumId:'ptrade-sum',btnId:'ptrade-exec',
+    hand:p.resources,giveId:r=>`ptg-${r}`,getId:r=>`ptw-${r}`,
+    getMax:()=>10,
+    check:(give,get)=>{
+      const g=RES.some(r=>give[r]>0),w=RES.some(r=>get[r]>0);
+      if(!g&&!w)return {ok:false,msg:'渡す資源と受け取る資源を選んでください'};
+      if(!g)return {ok:false,msg:'渡す資源を選んでください'};
+      if(!w)return {ok:false,msg:'受け取る資源を選んでください（1:0の交渉はできません）'};
+      return {ok:true,msg:'✅ この内容で全員に提案できます'};
+    }
+  });
   // 相手の資源状況の一覧は表示しない（手番順のみ参考として出す）
   const refDiv=document.getElementById('ptrade-player-ref');
   if(refDiv){refDiv.style.display='none';refDiv.innerHTML='';}
@@ -2883,6 +2996,7 @@ function goBackToTradeProposal(){
     if(gi)gi.value=savedGive[r]||0;
     if(wi)wi.value=savedWant[r]||0;
   }
+  ttRefresh('pt');
 }
 
 function showDevCardReveal(card){
@@ -4779,6 +4893,7 @@ function netTradeBackBtn(){
       if(gi)gi.value=savedGive[r]||0;
       if(wi)wi.value=savedWant[r]||0;
     }
+    ttRefresh('pt');
   },200);
 }
 
