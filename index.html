@@ -338,6 +338,9 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 .pc-grid.compact2 .pc .prow2 .chip{font-size:13px;padding:2px 5px}
 .pc-grid.compact .pc .used-col .uc-row{font-size:12.5px}
 .pc-grid.compact2 .pc .used-col .uc-row{font-size:11.5px;line-height:1.2}
+/* 少しだけ入りきらないときは、文字の大きさは通常のまま上下の余白だけ詰める */
+#mid-left .pc-grid.snug .pc{padding-top:4px;padding-bottom:4px}
+.pc-grid.snug .pc .pieces,.pc-grid.snug .pc .prow2{margin-top:2px}
 /* 画面が低いときはカード全体の余白を詰める */
 .pc-grid.compact .pc{padding:5px 8px}
 .pc-grid.compact .pc .prow1 .pn{font-size:14px}
@@ -4040,11 +4043,13 @@ function updatePlayerCards(){
   lp.appendChild(grid);
   // 画面の高さに収まらなければ、全カードを一斉に詰めてスクロールを出さない（資源チップの大きさは全カード共通）
   const over=()=>lp.scrollHeight>lp.clientHeight+1;
-  // まずゆとりのある余白で並べ、入らなければ通常 → 詰め表示 → さらに詰め表示の順に試す
-  grid.classList.add('roomy');
-  if(over())grid.classList.remove('roomy');
-  if(over())grid.classList.add('compact');
-  if(over())grid.classList.add('compact2');
+  // 通常表示で並べ、1画面に収まらないときだけ段階的に詰める
+  // （ゆとり → 通常 → 余白だけ詰め → 文字も小さく → さらに詰め）
+  const levels=['roomy','','snug','compact','compact compact2'];
+  for(const lv of levels){
+    grid.className='pc-grid'+(lv?' '+lv:'');
+    if(!over())break;
+  }
 }
 function animateResourceGain(pid,gains){
   setTimeout(()=>{
@@ -4519,6 +4524,8 @@ function fitCanvas(){
   render();
 }
 window.addEventListener('resize',fitCanvas);
+// 画面サイズが変わったら、プレイヤーカードの詰め具合も選び直す
+window.addEventListener('resize',()=>{if(G&&G.players&&G.players.length)updatePlayerCards();});
 
 // ---- 特別建設フェーズの建設（ホスト/オフライン実体。ゲストは転送）----
 function sbBuildRoad(){
