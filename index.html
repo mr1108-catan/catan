@@ -3268,7 +3268,7 @@ function runAITurn(){
   switch(G.phase){
     case 'setup':aiSetupSettle();break;
     case 'setup-road':aiSetupRoad();break;
-    case 'main-roll':rollDice();break;
+    case 'main-roll':if(aiPreRollKnight())break;rollDice();break;
     case 'main-action':G.aiActionCount=0;G._aiTradedThisTurn=false;G._aiTradeRound=0;G._aiTradeJustFailed=false;G._aiTradeAttempts=0;setTimeout(aiMainAction,100);break;
     case 'robber':aiMoveRobber();break;
     case 'special-build':aiSpecialBuildAction();break;
@@ -3476,6 +3476,50 @@ function aiMainAction(){
   }
 
   endTurn();
+}
+
+// ダイスを振る前に騎士を使うか判断する（人間と同じくロール前の使用はルール上可能）
+// 使った場合は山賊の移動・強奪のあと「サイコロ待ち」に戻り、そこでダイスを振る
+function aiPreRollKnight(){
+  const diff=G.difficulty||'normal';
+  if(diff==='easy'||G.devPlayedThisTurn||G.winner!==-1)return false;
+  const p=G.players[G.cur];
+  const knight=p.devCards.find(c=>!c.played&&c.type==='knight'&&!c.newThisTurn);
+  if(!knight)return false;
+  let chance=0;
+  // ① 騎士1枚で最大騎士力を取り、そのまま勝利点に届くなら必ず使う
+  const takesArmy=G.largestArmy!==p.id&&p.knights+1>=3&&p.knights+1>G.largestArmySize;
+  if(takesArmy&&p.vp+p.vpCards+2>=vpWin())chance=1;
+  // ② 自分の生産地に山賊がいるなら、振る前にどかして今回のロールの生産を守る
+  const rh=board.hexes.find(h=>h.hasRobber);
+  if(rh&&rh.num){
+    let mine=0;
+    for(const vid of rh.vertices){
+      const v=board.vertices[vid];
+      if(v.building&&v.player===p.id)mine+=v.building==='city'?2:1;
+    }
+    // 出やすい数字（5・6・8・9）や都市が塞がれているほど優先する
+    const loss=mine*(PROB[rh.num]||0);
+    if(loss>=4)chance=Math.max(chance,diff==='hard'?0.9:0.65);
+    else if(loss>0)chance=Math.max(chance,diff==='hard'?0.5:0.3);
+  }
+  // ③ 中盤以降、自分より上の首位がいるなら、そのロールの生産を先に止めにいく
+  const topOther=Math.max(0,...G.players.filter(x=>x.id!==p.id).map(x=>x.vp));
+  if(topOther>p.vp&&topOther>=Math.max(4,Math.ceil(vpWin()*0.5)))
+    chance=Math.max(chance,diff==='hard'?0.5:0.3);
+  // ④ 最大騎士力を狙う方針なら、ロール前でも切って数を伸ばす
+  if(takesArmy&&aiStrategy(p).plan==='army')chance=Math.max(chance,diff==='hard'?0.6:0.35);
+  if(Math.random()>=chance)return false;
+  knight.played=true;G.devPlayedThisTurn=true;G._preRollPlay=true;p.knights++;
+  updateLargestArmy();
+  addLog(`${p.name}(AI) が騎士カードを使用 (ロール前)`);
+  showDevCardUsePopup(p,'knight');
+  checkVictory();
+  if(G.winner!==-1){updateUI();render();return true;}
+  G.phase='robber';G.actionMode='move-robber';
+  setStatus(`${p.name} — 山賊を移動しています（ロール前）`);
+  updateUI();render();checkAI();
+  return true;
 }
 
 function aiUseDevCard(p){
