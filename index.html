@@ -3486,30 +3486,15 @@ function aiPreRollKnight(){
   const p=G.players[G.cur];
   const knight=p.devCards.find(c=>!c.played&&c.type==='knight'&&!c.newThisTurn);
   if(!knight)return false;
-  let chance=0;
   // ① 騎士1枚で最大騎士力を取り、そのまま勝利点に届くなら必ず使う
   const takesArmy=G.largestArmy!==p.id&&p.knights+1>=3&&p.knights+1>G.largestArmySize;
-  if(takesArmy&&p.vp+p.vpCards+2>=vpWin())chance=1;
-  // ② 自分の生産地に山賊がいるなら、振る前にどかして今回のロールの生産を守る
-  const rh=board.hexes.find(h=>h.hasRobber);
-  if(rh&&rh.num){
-    let mine=0;
-    for(const vid of rh.vertices){
-      const v=board.vertices[vid];
-      if(v.building&&v.player===p.id)mine+=v.building==='city'?2:1;
-    }
-    // 出やすい数字（5・6・8・9）や都市が塞がれているほど優先する
-    const loss=mine*(PROB[rh.num]||0);
-    if(loss>=4)chance=Math.max(chance,diff==='hard'?0.9:0.65);
-    else if(loss>0)chance=Math.max(chance,diff==='hard'?0.5:0.3);
+  const winsNow=takesArmy&&p.vp+p.vpCards+2>=vpWin();
+  if(!winsNow){
+    const ev=aiPreRollKnightEV(p,takesArmy);
+    // 期待値（資源カード何枚分の得か）がプラスのときだけ、その大きさに応じて使う
+    const chance=ev.total<=0.02?0:Math.min(diff==='hard'?0.9:0.65,ev.total*(diff==='hard'?8:6));
+    if(Math.random()>=chance)return false;
   }
-  // ③ 中盤以降、自分より上の首位がいるなら、そのロールの生産を先に止めにいく
-  const topOther=Math.max(0,...G.players.filter(x=>x.id!==p.id).map(x=>x.vp));
-  if(topOther>p.vp&&topOther>=Math.max(4,Math.ceil(vpWin()*0.5)))
-    chance=Math.max(chance,diff==='hard'?0.5:0.3);
-  // ④ 最大騎士力を狙う方針なら、ロール前でも切って数を伸ばす
-  if(takesArmy&&aiStrategy(p).plan==='army')chance=Math.max(chance,diff==='hard'?0.6:0.35);
-  if(Math.random()>=chance)return false;
   knight.played=true;G.devPlayedThisTurn=true;G._preRollPlay=true;p.knights++;
   updateLargestArmy();
   addLog(`${p.name}(AI) が騎士カードを使用 (ロール前)`);
@@ -3520,6 +3505,50 @@ function aiPreRollKnight(){
   setStatus(`${p.name} — 山賊を移動しています（ロール前）`);
   updateUI();render();checkAI();
   return true;
+}
+
+// ロール前に騎士を使う期待値（このロール1回分を、資源カードの枚数に換算して比べる）
+//  ＋ 自分の生産地から山賊をどかして、このロールで取れる見込み
+//  ＋ 首位の生産地を先に塞いで、このロールの首位の生産を止める見込み
+//  － 奪った1枚で手札が増え、7が出たときにバースト（半分捨て）する危険の増加分
+function aiPreRollKnightEV(p,takesArmy){
+  const P7=6/36;
+  const per=n=>(PROB[n]||0)/36; // その数字が今回のロールで出る確率
+  // 山賊を動かすと、今いる土地が解放される
+  const rh=board.hexes.find(h=>h.hasRobber);
+  let unblock=0;
+  if(rh&&rh.num){
+    for(const vid of rh.vertices){
+      const v=board.vertices[vid];
+      if(v.building&&v.player===p.id)unblock+=(v.building==='city'?2:1)*per(rh.num);
+    }
+  }
+  // 動かした先で、自分より上の首位の生産をこのロールで止められる見込み（自分の土地は除く）
+  const others=G.players.filter(x=>x.id!==p.id);
+  const topVP=Math.max(0,...others.map(x=>x.vp));
+  let leaderBlock=0;
+  if(topVP>p.vp&&topVP>=Math.max(4,Math.ceil(vpWin()*0.5))){
+    for(const h of board.hexes){
+      if(h.hasRobber||!h.num)continue;
+      let leaderLoss=0,mineHere=false;
+      for(const vid of h.vertices){
+        const v=board.vertices[vid];
+        if(!v.building)continue;
+        if(v.player===p.id){mineHere=true;break;}
+        if(G.players[v.player].vp>=topVP)leaderLoss+=(v.building==='city'?2:1)*per(h.num);
+      }
+      if(!mineHere)leaderBlock=Math.max(leaderBlock,leaderLoss);
+    }
+    leaderBlock*=0.6; // 相手の1枚減は自分の1枚増よりやや価値が低いとみなす
+  }
+  // 最大騎士力を狙う方針なら、早めに切ることにも少し価値がある
+  const army=takesArmy&&aiStrategy(p).plan==='army'?0.12:0;
+  // バーストの危険: 手札n枚 → 奪って n+1枚。8枚以上で7が出ると半分（切り捨て）を捨てる
+  const n=sum(p.resources);
+  const discard=k=>k>7?Math.floor(k/2):0;
+  const canSteal=others.some(x=>sum(x.resources)>0);
+  const burst=canSteal?P7*(discard(n+1)-discard(n)):0;
+  return {unblock,leaderBlock,army,burst,hand:n,total:unblock+leaderBlock+army-burst};
 }
 
 function aiUseDevCard(p){
