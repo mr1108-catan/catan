@@ -133,6 +133,20 @@ canvas{display:block;position:relative;z-index:1}
 .tt-btns button{font-size:15px;padding:11px 18px;font-weight:800}
 .tt-btns .btn-p{flex:1}
 .tt-btns .btn-p:disabled{opacity:.4;cursor:default;filter:grayscale(.5)}
+/* 交渉内容（見ている人の視点で 渡す＝赤系 → もらう＝緑系） */
+.tv-head{font-size:13px;color:#c8dff0;margin-bottom:8px}
+.tv-who{font-weight:800;color:#f4a460}
+.tv-vp{color:#f4d060;font-size:12px;font-weight:700}
+.tv-note{font-size:11.5px;color:#8aaac0;margin-left:4px}
+.tv-flow{display:flex;align-items:stretch;gap:6px}
+.tv-box{flex:1;min-width:0;border-radius:9px;padding:7px 9px}
+.tv-box.give{background:rgba(224,112,80,.12);border:1px solid rgba(224,112,80,.6)}
+.tv-box.get{background:rgba(80,192,128,.12);border:1px solid rgba(80,192,128,.6)}
+.tv-lab{font-size:12.5px;font-weight:800;margin-bottom:5px}
+.tv-box.give .tv-lab{color:#ff9a7a}
+.tv-box.get .tv-lab{color:#7ee0a0}
+.tv-chips{display:flex;flex-wrap:wrap;gap:4px}
+.tv-arrow{align-self:center;color:#8aaac0;font-size:18px;font-weight:900}
 /* 手番順ストリップ */
 /* 手番順は必ず1行に収める（幅が足りなければ横スクロール）*/
 .turn-strip{display:flex;flex-wrap:nowrap;gap:3px;margin-bottom:8px;padding:6px 8px;background:#071525;border-radius:8px;border:1px solid #1a3a5c;
@@ -2243,7 +2257,7 @@ const _TT={};
 function buildTradeTable(kind,cfg){
   _TT[kind]=cfg;
   const hand=cfg.hand;
-  let h='<div class="tt-head"><span class="hr">資源</span><span class="hg">📤 渡す</span><span class="hw">📥 受け取る</span></div>';
+  let h=`<div class="tt-head"><span class="hr">資源</span><span class="hg">📤 渡す</span><span class="hw">📥 ${cfg.getLabel||'受け取る'}</span></div>`;
   for(const r of RES){
     h+=`<div class="tt-row" id="tt-${kind}-${r}">`+
       `<div class="tt-res" style="--rc:${RES_COLOR[r]}"><span class="tt-nm">${RES_EMOJI[r]} ${RES_JP[r]}</span>`+
@@ -2311,7 +2325,7 @@ function ttRefresh(kind){
   if(sum){
     sum.innerHTML='<div class="tt-sum-main"><div class="tt-line">'+
       `<span style="color:#ff9a7a">📤</span>${gs||'<span class="ph">渡す資源を選択</span>'}`+
-      `<span class="ar">➜</span><span style="color:#7ee0a0">📥</span>${ws||'<span class="ph">受け取る資源を選択</span>'}</div>`+
+      `<span class="ar">➜</span><span style="color:#7ee0a0">📥</span>${ws||`<span class="ph">${c.getLabel==='もらう'?'もらう':'受け取る'}資源を選択</span>`}</div>`+
       `<div class="tt-msg ${res.ok?'ok':'ng'}">${res.msg}</div></div>`+
       ((gs||ws)?`<button type="button" class="btn-s tt-clear" onclick="ttClear('${kind}')">↺ クリア</button>`:'');
   }
@@ -2647,13 +2661,13 @@ function showPlayerTradeModal(){
   const p=G.players[G.cur];
   buildTradeTable('pt',{
     tableId:'ptrade-table',sumId:'ptrade-sum',btnId:'ptrade-exec',
-    hand:p.resources,giveId:r=>`ptg-${r}`,getId:r=>`ptw-${r}`,
+    hand:p.resources,giveId:r=>`ptg-${r}`,getId:r=>`ptw-${r}`,getLabel:'もらう',
     getMax:()=>10,
     check:(give,get)=>{
       const g=RES.some(r=>give[r]>0),w=RES.some(r=>get[r]>0);
-      if(!g&&!w)return {ok:false,msg:'渡す資源と受け取る資源を選んでください'};
+      if(!g&&!w)return {ok:false,msg:'渡す資源ともらう資源を選んでください'};
       if(!g)return {ok:false,msg:'渡す資源を選んでください'};
-      if(!w)return {ok:false,msg:'受け取る資源を選んでください（1:0の交渉はできません）'};
+      if(!w)return {ok:false,msg:'もらう資源を選んでください（1:0の交渉はできません）'};
       return {ok:true,msg:'✅ この内容で全員に提案できます'};
     }
   });
@@ -2692,6 +2706,25 @@ function proposePlayerTrade(){
   showUnifiedReactModal();
 }
 
+// 交渉内容の表示（反応・結果モーダル共通）
+// 常に「この画面を見ている人」の視点で書き、渡す＝赤系・もらう＝緑系、並び順も「渡す → もらう」にそろえる
+function tradeViewHtml(trade){
+  const proposer=G.players[trade.proposer];
+  // 見ている人: オンラインは自分の席。オフラインは人間の提案ならその提案者、CPUの提案なら回答する人間
+  const viewer=NET.on?NET.myPid:(proposer.isAI?null:trade.proposer);
+  const iAmProposer=viewer===trade.proposer;
+  const myGive=iAmProposer?trade.give:trade.want;
+  const myGet=iAmProposer?trade.want:trade.give;
+  const head=iAmProposer
+    ?'<span class="tv-who">📨 あなたの提案</span>'
+    :`<strong style="color:${proposer.color}">${proposer.isAI?'🤖':'👤'} ${escapeHtml(proposer.name)}</strong> `+
+     `<span class="tv-vp">⭐${shownVP(proposer)}</span> からの提案<span class="tv-note">（承諾した場合）</span>`;
+  return `<div class="tv-head">${head}</div><div class="tv-flow">`+
+    `<div class="tv-box give"><div class="tv-lab">📤 あなたが渡す</div><div class="tv-chips">${resEntriesToChips(myGive)}</div></div>`+
+    '<div class="tv-arrow">⇄</div>'+
+    `<div class="tv-box get"><div class="tv-lab">📥 あなたがもらう</div><div class="tv-chips">${resEntriesToChips(myGet)}</div></div></div>`;
+}
+
 function showUnifiedReactModal(){
   if(NET.on&&NET.started){netTradeBegin();return;} // オンラインは専用フローへ
   if(!pendingTrade){
@@ -2716,14 +2749,7 @@ function showUnifiedReactModal(){
     // Fall through to unified modal — humans who can afford will have buttons
   }
   // Human-proposed: show unified modal with buttons for human opponents
-  const proposer=G.players[pendingTrade.proposer];
-  const gsChips=resEntriesToChips(pendingTrade.give);
-  const wsChips=resEntriesToChips(pendingTrade.want);
-  const propVP=shownVP(proposer);
-  document.getElementById('ptrade-react-proposal').innerHTML=
-    `<div style="margin-bottom:6px"><strong style="color:${proposer.color}">${proposer.isAI?'🤖':'👤'} ${proposer.name}</strong> <span style="color:#f4d060;font-size:12px;font-weight:700">⭐${propVP}VP</span> からの提案:</div>`+
-    `<div style="margin-bottom:5px"><span style="color:#ffaaaa;font-size:12px;font-weight:700">📤 あなたが渡すもの:</span><br><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px">${wsChips}</div></div>`+
-    `<div><span style="color:#aaffaa;font-size:12px;font-weight:700">🎁 あなたがもらうもの:</span><br><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px">${gsChips}</div></div>`;
+  document.getElementById('ptrade-react-proposal').innerHTML=tradeViewHtml(pendingTrade);
   const playersEl=document.getElementById('ptrade-react-players');
   const humanFooter=document.getElementById('ptrade-human-react-footer');
   const humanLabel=document.getElementById('ptrade-human-react-label');
@@ -2834,16 +2860,8 @@ function showTradeReactionResults(){
   // Show proposal summary (always visible, especially for AI-proposed trades)
   const propEl=document.getElementById('ptrade-result-proposal');
   if(propEl&&pendingTrade){
-    const proposer=G.players[pendingTrade.proposer];
-    const gsChips2=resEntriesToChips(pendingTrade.give);
-    const wsChips2=resEntriesToChips(pendingTrade.want);
     propEl.style.display='block';
-    const propResVP=shownVP(proposer);
-    propEl.innerHTML=`<div style="margin-bottom:6px"><strong style="color:${proposer.color}">${proposer.isAI?'🤖':'👤'} ${proposer.name}</strong> <span style="color:#f4d060;font-size:12px;font-weight:700">⭐${propResVP}VP</span> の提案内容:</div>`+
-      `<div style="display:flex;gap:16px;flex-wrap:wrap">`+
-      `<div><span style="color:#aaffaa;font-size:12px;font-weight:700">📤 渡す:</span><br><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px">${gsChips2}</div></div>`+
-      `<div><span style="color:#ffaaaa;font-size:12px;font-weight:700">🎁 もらう:</span><br><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px">${wsChips2}</div></div>`+
-      `</div>`;
+    propEl.innerHTML=tradeViewHtml(pendingTrade);
   }
   const reactDiv=document.getElementById('ptrade-reactions');
   const acceptBtns=document.getElementById('ptrade-accept-btns');
@@ -4880,14 +4898,7 @@ function netOnTradeStage(stage,trade,secs){
 function netRenderReact(trade,secs){
   NET.curTrade=trade;
   G._tradeOpen=true;
-  const proposer=G.players[trade.proposer];
-  const gsChips=resEntriesToChips(trade.give);
-  const wsChips=resEntriesToChips(trade.want);
-  const propVP=shownVP(proposer);
-  document.getElementById('ptrade-react-proposal').innerHTML=
-    `<div style="margin-bottom:6px"><strong style="color:${proposer.color}">${proposer.isAI?'🤖':'👤'} ${proposer.name}</strong> <span style="color:#f4d060;font-size:12px;font-weight:700">⭐${propVP}VP</span> からの提案:</div>`+
-    `<div style="margin-bottom:5px"><span style="color:#ffaaaa;font-size:12px;font-weight:700">📤 あなたが渡すもの:</span><br><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px">${wsChips}</div></div>`+
-    `<div><span style="color:#aaffaa;font-size:12px;font-weight:700">🎁 あなたがもらうもの:</span><br><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px">${gsChips}</div></div>`;
+  document.getElementById('ptrade-react-proposal').innerHTML=tradeViewHtml(trade);
   const playersEl=document.getElementById('ptrade-react-players');
   const humanFooter=document.getElementById('ptrade-human-react-footer');
   const humanLabel=document.getElementById('ptrade-human-react-label');
@@ -4940,16 +4951,9 @@ function netMyReact(yes){
 function netRenderResult(trade,secs){
   NET.curTrade=trade;
   G._tradeOpen=true;
-  const proposer=G.players[trade.proposer];
   const propEl=document.getElementById('ptrade-result-proposal');
-  const gsChips2=resEntriesToChips(trade.give),wsChips2=resEntriesToChips(trade.want);
-  const propResVP=shownVP(proposer);
   propEl.style.display='block';
-  propEl.innerHTML=`<div style="margin-bottom:6px"><strong style="color:${proposer.color}">${proposer.isAI?'🤖':'👤'} ${proposer.name}</strong> <span style="color:#f4d060;font-size:12px;font-weight:700">⭐${propResVP}VP</span> の提案内容:</div>`+
-    `<div style="display:flex;gap:16px;flex-wrap:wrap">`+
-    `<div><span style="color:#aaffaa;font-size:12px;font-weight:700">📤 渡す:</span><br><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px">${gsChips2}</div></div>`+
-    `<div><span style="color:#ffaaaa;font-size:12px;font-weight:700">🎁 もらう:</span><br><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px">${wsChips2}</div></div>`+
-    `</div>`;
+  propEl.innerHTML=tradeViewHtml(trade);
   const reactDiv=document.getElementById('ptrade-reactions');
   const acceptBtns=document.getElementById('ptrade-accept-btns');
   reactDiv.innerHTML='';acceptBtns.innerHTML='';
