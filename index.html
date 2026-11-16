@@ -1595,10 +1595,8 @@ function showDiceRollFx(d1,d2,total,spin){
     // 名前は省略せず全文を出す。枠の幅は固定なので、長い名前ほど文字を小さくして収める
     const nameLen=[...p.name].length;
     const nameFs=Math.min(21,Math.floor(180/Math.max(1,nameLen)));
-    // 7を出した本人が8枚以上持っていたら「自爆」も添える（隠し手札でも合計枚数は分かる）
-    const selfBurst=total===7&&sum(p.resources)>7;
     const sub=total===7
-      ?`<div class="dfx-sub" style="color:#ff9c9c">🏴 山賊発動！${selfBurst?'<br><span style="color:#ffcf6a">💥 '+escapeHtml(p.name)+' 自爆</span>':''}</div>`
+      ?'<div class="dfx-sub" style="color:#ff9c9c">🏴 山賊発動！</div>'
       :`<div class="dfx-sub" style="color:${p.color};font-size:${nameFs}px">${escapeHtml(p.name)}</div>`;
     // 数字とプレイヤー名は半透明の枠で囲み、盤面の上でも読めるようにする
     el.querySelector('#dfx-res').innerHTML=
@@ -1617,9 +1615,8 @@ function showDiceAnnounce(d1,d2,total,spin){
   const el=document.createElement('div');
   el.id='dice-announce';el.className='in';
   const p=G.players[G.cur];
-  const selfBurst=total===7&&sum(p.resources)>7;
   const sub=total===7
-    ?`<div style="font-size:20px;color:#ff7777;margin-top:6px;font-weight:700">🏴 山賊発動！${selfBurst?'<br><span style="color:#ffcf6a">💥 '+escapeHtml(p.name)+' 自爆</span>':''}</div>`
+    ?'<div style="font-size:20px;color:#ff7777;margin-top:6px;font-weight:700">🏴 山賊発動！</div>'
     :`<div style="font-size:20px;color:${p.color};font-weight:800;margin-top:8px;letter-spacing:.5px;text-shadow:0 0 12px ${p.color}99">${p.name}</div>`;
   el.innerHTML=
     '<div style="font-size:58px;letter-spacing:16px;line-height:1">'+diceFace(d1)+diceFace(d2)+'</div>'+
@@ -3064,8 +3061,7 @@ function showTradeReactionResults(){
   if(pendingTrade?.wasAIProposed){
     const humanRespondents=G.players.filter(op=>!op.isAI&&op.id!==pendingTrade.proposer);
     const humanActed=humanRespondents.some(op=>pendingTrade.reactions.hasOwnProperty(op.id));
-    // 終盤ほど結果表示を短くしてテンポを保つ（人が反応したときは少し短め）
-    const delay=Math.min(humanActed?3000:4000,aiTradePace().showMs);
+    const delay=humanActed?3000:4000;
     startTradeTimer(Math.floor(delay/1000),null);
     const _capturedTrade=pendingTrade; // capture reference to detect stale callbacks
     setTimeout(()=>{
@@ -3317,9 +3313,9 @@ function aiStrategy(p){
 //  attempts: 断られた後も含めた1ターンの提案回数の上限 / bankFirst: 銀行・港で足りるならそちらを優先
 function aiTradePace(){
   const stage=Math.max(...G.players.map(x=>x.vp))/vpWin();
-  if(stage>=0.7)return {stage:'late',chance:0.15,decisions:1,attempts:1,bankFirst:true,showMs:2500};
-  if(stage>=0.4)return {stage:'mid',chance:0.28,decisions:1,attempts:2,bankFirst:false,showMs:3500};
-  return {stage:'early',chance:0.40,decisions:2,attempts:3,bankFirst:false,showMs:4000};
+  if(stage>=0.7)return {stage:'late',chance:0.15,decisions:1,attempts:1,bankFirst:true};
+  if(stage>=0.4)return {stage:'mid',chance:0.28,decisions:1,attempts:2,bankFirst:false};
+  return {stage:'early',chance:0.40,decisions:2,attempts:3,bankFirst:false};
 }
 function aiEndgamePressure(){
   const maxVP=Math.max(...G.players.map(x=>x.vp+x.vpCards));
@@ -5003,9 +4999,7 @@ function netTradeResults(){
   const anyYes=G.players.some(op=>op.id!==pendingTrade.proposer&&pendingTrade.reactions[op.id]==='yes');
   if(!anyYes)addLog('🤝 交渉失敗：誰も承諾しませんでした');
   if(wasAI&&!anyYes&&pendingTrade.humanVoluntaryReacted){netTradeClose(true);return;}
-  // CPUの提案の結果表示は、終盤ほど短くしてテンポを保つ
-  const showMs=aiTradePace().showMs;
-  netBroadcastTrade('result',wasAI?Math.ceil(showMs/1000):60);
+  netBroadcastTrade('result',wasAI?4:60);
   const cap=pendingTrade;
   if(wasAI){
     NET._tradeTimer=setTimeout(()=>{
@@ -5019,7 +5013,7 @@ function netTradeResults(){
         return bldA<=bldB?a:b;
       }):acceptors[0];
       if(best)netCompleteTradeCore(best.id);else netTradeClose(true);
-    },showMs);
+    },4000);
   } else {
     NET._tradeTimer=setTimeout(()=>{if(pendingTrade===cap&&pendingTrade)netTradeClose(false);},60500);
   }
