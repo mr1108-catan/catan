@@ -224,6 +224,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 .ws-tbl td.sub{font-weight:800;color:#ffe880;background:rgba(255,232,128,.05)}
 .ws-tbl td.tot{font-weight:900;color:#fff;background:rgba(255,255,255,.05)}
 .ws-tbl td.top{color:#7ee0a0;font-weight:900}
+.ws-tbl td.worst{color:#ff8a7a;font-weight:900}
 .ws-tbl .sep{border-left:1px solid #1e3a58}
 #win-banner h2{font-size:44px;color:#f4a460;text-shadow:0 0 40px rgba(244,164,96,.7);animation:pulse 1.5s infinite alternate}
 #win-banner p{font-size:22px;color:#fff}
@@ -1669,7 +1670,8 @@ function rollingDiceBox(){
 
 // ---- 終了画面の分析用の集計 ----
 // dice は資源ごと（stats.dice[pid][res]）、それ以外は入手経路ごとの合計枚数（stats[src][pid]）
-const STAT_SRC=['dice','setup','steal','mono','yop','bank','trade'];
+// blocked/discard/stolen/monoLost は失った（受け取れなかった）枚数
+const STAT_SRC=['dice','setup','steal','mono','yop','bank','trade','blocked','discard','stolen','monoLost'];
 function statAdd(src,pid,n,res){
   if(!G.stats)G.stats={};
   if(!(n>0)||pid==null||pid<0)return;
@@ -1685,7 +1687,15 @@ function distributeResources(num){
   const owed={};              // owed[res][pid] = 枚数
   for(const r of RES)owed[r]={};
   for(const h of board.hexes){
-    if(h.num===num&&h.hasRobber){G.robberBlockedTiles.push(h.id);continue;}
+    if(h.num===num&&h.hasRobber){
+      G.robberBlockedTiles.push(h.id);
+      // 山賊がいなければ受け取れていた枚数を記録する
+      for(const vid of h.vertices){
+        const v=board.vertices[vid];
+        if(v.building)statAdd('blocked',v.player,v.building==='city'?2:1);
+      }
+      continue;
+    }
     if(h.num!==num)continue;
     G.highlightTiles.push(h.id);
     for(const vid of h.vertices){
@@ -1751,6 +1761,7 @@ function handleSeven(){
     for(const r of['sheep','brick','wood','wheat','ore']){
       const d=Math.min(rem,p.resources[r]);p.resources[r]-=d;G.bank[r]+=d;disc[r]=(disc[r]||0)+d;rem-=d;if(!rem)break;
     }
+    statAdd('discard',p.id,need);
     const discStr=Object.entries(disc).filter(([,n])=>n>0).map(([r,n])=>`${RES_JP[r]}×${n}`).join('+');
     addLog(`💥 ${p.name}(AI) が捨てた: ${discStr}`);
   }
@@ -1801,6 +1812,7 @@ function applyDiscard(pid,disc){
   for(const r of RES){const n=disc[r]||0;if(n<0||n>p.resources[r])return;chosen+=n;}
   if(chosen!==need)return;
   for(const r of RES){p.resources[r]-=disc[r]||0;G.bank[r]+=disc[r]||0;}
+  statAdd('discard',pid,chosen);
   const discStr=Object.entries(disc).filter(([,n])=>n>0).map(([r,n])=>`${RES_JP[r]}×${n}`).join('+');
   addLog(`💥 ${p.name} が捨てた: ${discStr}`);
   if(G.discardQueue.length>0){G.discardCurrent=G.discardQueue.shift();promptDiscardCurrent();}
@@ -1886,7 +1898,7 @@ function stealFrom(pid){
   const avail=[];for(const r of RES)for(let i=0;i<from.resources[r];i++)avail.push(r);
   if(avail.length){
     const s=rnd(avail);from.resources[s]--;thief.resources[s]++;
-    statAdd('steal',thief.id,1);
+    statAdd('steal',thief.id,1);statAdd('stolen',from.id,1);
     addLog(`⚔️ ${thief.name} が ${from.name} から ${RES_JP[s]} を奪った`);
     // Show popup when human is involved (either thief or victim)
     if(!thief.isAI||!from.isAI){
@@ -2202,7 +2214,7 @@ function executeMono(r){
   for(const op of G.players){
     if(op.id===G.cur)continue;
     const amt=op.resources[r];
-    if(amt>0){stolen[op.id]=amt;total+=amt;op.resources[r]=0;}
+    if(amt>0){stolen[op.id]=amt;total+=amt;op.resources[r]=0;statAdd('monoLost',op.id,amt);}
   }
   p.resources[r]+=total;
   statAdd('mono',p.id,total);
@@ -2657,9 +2669,30 @@ function buildWinStatsHtml(){
       x.o.map((n,i)=>cell(n,6+i,i===0?'sep':'')).join('')+cell(x.total,12,'tot sep')+'</tr>';
   }
   tbl+='</table>';
+  // ③ 失った枚数（山賊で受け取れなかった分と、手札から失った分）
+  const LOSS=[['discard','💥 7で捨てた'],['stolen','⚔️ 盗まれた'],['monoLost','👑 独占された']];
+  const lrows=rows.map(x=>{
+    const l=LOSS.map(([src])=>val(src,x.p.id));
+    return {p:x.p,blocked:val('blocked',x.p.id),l,lSum:l.reduce((s,n)=>s+n,0)};
+  });
+  const lMax=i=>Math.max(...lrows.map(x=>i===0?x.blocked:i<4?x.l[i-1]:x.lSum));
+  const lcell=(n,i,cls='')=>{
+    const top=n>0&&n===lMax(i)&&lrows.length>1;
+    return `<td class="${cls}${n?'':' z'}${top?' worst':''}">${n||'–'}</td>`;
+  };
+  let ltbl='<table class="ws-tbl"><tr><th></th>'+
+    '<th class="grp sep">受け取れなかった</th><th class="grp sep" colspan="4">手札から失った</th></tr>'+
+    '<tr><th style="text-align:left">プレイヤー</th><th class="sep">🏴 山賊でブロック</th>'+
+    LOSS.map(([,l],i)=>`<th${i===0?' class="sep"':''}>${l}</th>`).join('')+'<th>計</th></tr>';
+  for(const x of lrows){
+    ltbl+=`<tr><td class="nm" style="color:${x.p.color}" title="${escapeHtml(x.p.name)}">${escapeHtml(x.p.name)}</td>`+
+      lcell(x.blocked,0,'sep')+x.l.map((n,i)=>lcell(n,1+i,i===0?'sep':'')).join('')+lcell(x.lSum,4,'sub')+'</tr>';
+  }
+  ltbl+='</table>';
   return '<div class="ws-cols">'+
     `<div class="ws-res"><div class="ws-h">🌾 資源別の出数<span>ダイスで配られた枚数</span></div>${resHtml}</div>`+
-    `<div class="ws-tblw"><div class="ws-h">👥 プレイヤー別の入手枚数<span>緑＝その列の最多</span></div>${tbl}</div>`+
+    `<div class="ws-tblw"><div class="ws-h">👥 プレイヤー別の入手枚数<span>緑＝その列の最多</span></div>${tbl}`+
+      `<div class="ws-h" style="margin-top:14px">💸 プレイヤー別の失った枚数<span>赤＝その列の最多（一番被害を受けた人）</span></div>${ltbl}</div>`+
   '</div>';
 }
 function checkVictory(){
@@ -3728,7 +3761,7 @@ function aiUseDevCard(p){
     if(counts[bestR]>=3){
       mono.played=true;G.devPlayedThisTurn=true;
       const aiStolen={};let aiTotal=0;
-      for(const op of G.players){if(op.id===p.id)continue;const a=op.resources[bestR];if(a>0){aiStolen[op.id]=a;aiTotal+=a;op.resources[bestR]=0;p.resources[bestR]+=a;}}
+      for(const op of G.players){if(op.id===p.id)continue;const a=op.resources[bestR];if(a>0){aiStolen[op.id]=a;aiTotal+=a;op.resources[bestR]=0;p.resources[bestR]+=a;statAdd('monoLost',op.id,a);}}
       statAdd('mono',p.id,aiTotal);
       addLog(`${p.name}(AI) が独占: ${RES_JP[bestR]}`);
       showDevCardUsePopup(p,'monopoly');
