@@ -199,6 +199,32 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 /* Win banner */
 #win-banner{position:fixed;inset:0;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;z-index:300;flex-direction:column;gap:18px}
 #win-banner.hidden{display:none}
+/* 内容が画面より高いときは上端を切らずにスクロールできるようにする */
+#win-banner{justify-content:safe center;overflow-y:auto;padding:20px 0}
+/* 終了画面: 資源の分析 */
+#win-stats{width:min(95vw,1052px);background:rgba(4,18,40,.85);border:1px solid #2a5a9c;border-radius:10px;padding:14px 20px;color:#c8dff0;flex-shrink:0}
+#win-stats:empty{display:none}
+.ws-h{font-size:13px;font-weight:700;color:#8aaac0;margin-bottom:8px;letter-spacing:.5px}
+.ws-h span{font-weight:400;font-size:11px;color:#6a8aa0;margin-left:6px}
+.ws-cols{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+.ws-res{flex:0 0 280px}
+.ws-bar{display:grid;grid-template-columns:76px 1fr 64px;align-items:center;gap:8px;margin:5px 0;font-size:13px}
+.ws-bar .bn{font-weight:700;white-space:nowrap}
+.ws-bar .bt{height:16px;background:#0a1a2c;border-radius:4px;overflow:hidden}
+.ws-bar .bt i{display:block;height:100%;border-radius:4px}
+.ws-bar .bv{text-align:right;font-weight:800;color:#fff;white-space:nowrap}
+.ws-bar .bv small{font-weight:400;color:#7a9ab0;font-size:11px;margin-left:3px}
+.ws-tblw{flex:1 1 560px;min-width:0;overflow-x:auto}
+.ws-tbl{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap}
+.ws-tbl th{font-size:11px;font-weight:600;color:#7a9ab0;padding:3px 5px;text-align:center}
+.ws-tbl th.grp{color:#c8dff0;font-weight:700;border-bottom:1px solid #1e3a58}
+.ws-tbl td{padding:5px;text-align:center;border-top:1px solid #12283f}
+.ws-tbl td.nm{text-align:left;font-weight:700;max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.ws-tbl td.z{color:#3a5570}
+.ws-tbl td.sub{font-weight:800;color:#ffe880;background:rgba(255,232,128,.05)}
+.ws-tbl td.tot{font-weight:900;color:#fff;background:rgba(255,255,255,.05)}
+.ws-tbl td.top{color:#7ee0a0;font-weight:900}
+.ws-tbl .sep{border-left:1px solid #1e3a58}
 #win-banner h2{font-size:44px;color:#f4a460;text-shadow:0 0 40px rgba(244,164,96,.7);animation:pulse 1.5s infinite alternate}
 #win-banner p{font-size:22px;color:#fff}
 @keyframes pulse{from{text-shadow:0 0 20px rgba(244,164,96,.5)}to{text-shadow:0 0 60px rgba(244,164,96,.9)}}
@@ -682,6 +708,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
     <div id="win-ranking" style="background:rgba(4,18,40,.85);border:1px solid #2a5a9c;border-radius:10px;padding:14px 20px;font-size:13px;color:#c8dff0;flex:1;min-width:320px;max-width:520px"></div>
     <div id="win-dice-log" style="background:rgba(4,18,40,.85);border:1px solid #2a5a9c;border-radius:10px;padding:14px 20px;font-size:13px;color:#c8dff0;text-align:left;flex:1;min-width:320px;max-width:520px"></div>
   </div>
+  <div id="win-stats"></div>
   <button class="btn-p" style="font-size:16px;padding:12px 28px;margin-top:8px" onclick="location.reload()">もう一度プレイ</button>
 </div>
 
@@ -1015,7 +1042,8 @@ function initGame(playerDefs){
     nextActiveCur:1,showOppRes:false,highlightTiles:[],
     difficulty:'normal',autoPassSB:'off',bankView:'gauge',
     vpWin:VP_WIN_DEFAULT,declareWin:'off',diceFx:'on',showCosts:true,openHands:'off',
-    _undoSnapshot:null,_tradeOpen:false,diceLog:[],robberBlockedTiles:[],_diceRoller:null,_popupCount:0,_roadBuilderAI:new Set()
+    _undoSnapshot:null,_tradeOpen:false,diceLog:[],robberBlockedTiles:[],_diceRoller:null,_popupCount:0,_roadBuilderAI:new Set(),
+    stats:{} // 終了画面の分析用（入手経路ごとの枚数）
   };
   G._defKeys=defKeys;
   G.cur=G.setupOrder[0];
@@ -1437,7 +1465,7 @@ function placeSettlement(vid){
       const gained=[];
       for(const hid of v.hexes){
         const h=board.hexes[hid];
-        if(h.res!=='desert'&&G.bank[h.res]>0){p.resources[h.res]++;G.bank[h.res]--;gained.push(RES_JP[h.res]);}
+        if(h.res!=='desert'&&G.bank[h.res]>0){p.resources[h.res]++;G.bank[h.res]--;gained.push(RES_JP[h.res]);statAdd('setup',p.id,1);}
       }
       addLog(`${p.name} 開拓地配置 → ${gained.length?gained.join('+')+' 獲得':'資源なし'}`);
     } else {
@@ -1639,6 +1667,17 @@ function rollingDiceBox(){
   if(el)el.innerHTML='<span class="dbox-wait">🎲</span>';
 }
 
+// ---- 終了画面の分析用の集計 ----
+// dice は資源ごと（stats.dice[pid][res]）、それ以外は入手経路ごとの合計枚数（stats[src][pid]）
+const STAT_SRC=['dice','setup','steal','mono','yop','bank','trade'];
+function statAdd(src,pid,n,res){
+  if(!G.stats)G.stats={};
+  if(!(n>0)||pid==null||pid<0)return;
+  const s=G.stats[src]||(G.stats[src]={});
+  if(src==='dice'){const o=s[pid]||(s[pid]={});o[res]=(o[res]||0)+n;}
+  else s[pid]=(s[pid]||0)+n;
+}
+
 function distributeResources(num){
   const gains={};
   G.highlightTiles=[];G.robberBlockedTiles=[];
@@ -1685,6 +1724,7 @@ function distributeResources(num){
   }
   for(const[pid,rs]of Object.entries(gains)){
     const p=G.players[pid];
+    for(const[r,n]of Object.entries(rs))statAdd('dice',Number(pid),n,r);
     addLog(`  ${p.name}: `+Object.entries(rs).map(([r,n])=>`${RES_JP[r]}×${n}`).join(', '));
     animateResourceGain(Number(pid),rs);
   }
@@ -1846,6 +1886,7 @@ function stealFrom(pid){
   const avail=[];for(const r of RES)for(let i=0;i<from.resources[r];i++)avail.push(r);
   if(avail.length){
     const s=rnd(avail);from.resources[s]--;thief.resources[s]++;
+    statAdd('steal',thief.id,1);
     addLog(`⚔️ ${thief.name} が ${from.name} から ${RES_JP[s]} を奪った`);
     // Show popup when human is involved (either thief or victim)
     if(!thief.isAI||!from.isAI){
@@ -1917,7 +1958,8 @@ function takeUndoSnapshot(){
     phase:G.phase,cur:G.cur,
     specialBuildPhase:G.specialBuildPhase,
     specialBuildOrder:[...G.specialBuildOrder],
-    specialBuildIdx:G.specialBuildIdx
+    specialBuildIdx:G.specialBuildIdx,
+    stats:JSON.parse(JSON.stringify(G.stats||{})) // 取り消した銀行取引などを集計に残さない
   };
 }
 function undoLastAction(){
@@ -1930,6 +1972,7 @@ function undoLastAction(){
     p.vp=sp.vp;p.vpCards=sp.vpCards;p.knights=sp.knights;
   });
   G.bank={...s.bank};G.devDeck=[...s.devDeck];
+  if(s.stats)G.stats=JSON.parse(JSON.stringify(s.stats));
   G.largestArmy=s.largestArmy;G.longestRoad=s.longestRoad;
   G.largestArmySize=s.largestArmySize;G.longestRoadSize=s.longestRoadSize;
   G.devPlayedThisTurn=s.devPlayedThisTurn;
@@ -2162,6 +2205,7 @@ function executeMono(r){
     if(amt>0){stolen[op.id]=amt;total+=amt;op.resources[r]=0;}
   }
   p.resources[r]+=total;
+  statAdd('mono',p.id,total);
   addLog(`${p.name} が「${RES_JP[r]}」を独占！`+(bankViewMode()==='num'?`${total}枚獲得`:''));
   announceCardEffect(p,'monopoly',{res:r,total});
   notifyMonoVictims(p,r,stolen);
@@ -2398,6 +2442,7 @@ function executeTradeWith(give,get){
   if(Math.abs(giveV-getV)>0.01)return;
   takeUndoSnapshot(); // 銀行取引もundo可能
   for(const r of RES){p.resources[r]-=give[r];G.bank[r]+=give[r];p.resources[r]+=get[r];G.bank[r]-=get[r];}
+  statAdd('bank',p.id,RES.reduce((s,r)=>s+get[r],0));
   clampBank();
   const gs=Object.entries(give).filter(([,v])=>v>0).map(([r,v])=>`${RES_JP[r]}×${v}`).join(',');
   const gs2=Object.entries(get).filter(([,v])=>v>0).map(([r,v])=>`${RES_JP[r]}×${v}`).join(',');
@@ -2563,7 +2608,59 @@ function renderWinBanner(p){
         `<div id="dview-chart" style="display:none">${buildDiceChartHtml(dLog)}</div>`;
     }
   }
+  const sEl=document.getElementById('win-stats');
+  if(sEl)sEl.innerHTML=buildWinStatsHtml();
   document.getElementById('win-banner').classList.remove('hidden');
+}
+// 終了画面の分析: 資源ごとの出数と、プレイヤーごとの入手枚数（経路別）
+function buildWinStatsHtml(){
+  const st=G.stats||{};
+  const dice=st.dice||{};
+  const val=(src,pid)=>(st[src]&&st[src][pid])||0;
+  const diceOf=(pid,r)=>(dice[pid]&&dice[pid][r])||0;
+  // ① 資源ごとの出数（ダイスで配られた枚数の合計）
+  const resTot={};
+  for(const r of RES)resTot[r]=G.players.reduce((s,p)=>s+diceOf(p.id,r),0);
+  const allDice=RES.reduce((s,r)=>s+resTot[r],0);
+  if(!allDice&&!G.players.some(p=>STAT_SRC.some(src=>src!=='dice'&&val(src,p.id))))return '';
+  const maxRes=Math.max(1,...RES.map(r=>resTot[r]));
+  let resHtml='';
+  for(const r of RES){
+    const pct=allDice?Math.round(resTot[r]/allDice*100):0;
+    resHtml+=`<div class="ws-bar"><span class="bn">${RES_EMOJI[r]} ${RES_JP[r]}</span>`+
+      `<span class="bt"><i style="width:${resTot[r]/maxRes*100}%;background:${RES_COLOR[r]}"></i></span>`+
+      `<span class="bv">${resTot[r]}枚<small>${pct}%</small></span></div>`;
+  }
+  resHtml+=`<div style="font-size:11px;color:#6a8aa0;margin-top:6px">ダイスで配られた合計 ${allDice} 枚</div>`;
+  // ② プレイヤーごとの入手枚数（順位順）
+  const OTHER=[['setup','初期'],['steal','強奪'],['mono','独占'],['yop','発見'],['bank','銀行'],['trade','交渉']];
+  const rows=[...G.players].sort((a,b)=>(b.vp+b.vpCards)-(a.vp+a.vpCards)).map(p=>{
+    const d=RES.map(r=>diceOf(p.id,r));
+    const dSum=d.reduce((s,n)=>s+n,0);
+    const o=OTHER.map(([src])=>val(src,p.id));
+    return {p,d,dSum,o,total:dSum+o.reduce((s,n)=>s+n,0)};
+  });
+  // 各列の最大値を緑で強調（0は除く）
+  const colMax=i=>Math.max(...rows.map(x=>i<5?x.d[i]:i===5?x.dSum:i<12?x.o[i-6]:x.total));
+  const cell=(n,i,cls='')=>{
+    const top=n>0&&n===colMax(i)&&rows.length>1;
+    return `<td class="${cls}${n?'':' z'}${top&&!cls.includes('tot')?' top':''}">${n||'–'}</td>`;
+  };
+  let tbl='<table class="ws-tbl"><tr><th></th>'+
+    '<th class="grp sep" colspan="6">🎲 ダイスで入手</th><th class="grp sep" colspan="6">その他の入手</th><th class="sep"></th></tr>'+
+    '<tr><th style="text-align:left">プレイヤー</th>'+
+    RES.map((r,i)=>`<th${i===0?' class="sep"':''} title="${RES_JP[r]}">${RES_EMOJI[r]}</th>`).join('')+'<th>計</th>'+
+    OTHER.map(([,l],i)=>`<th${i===0?' class="sep"':''}>${l}</th>`).join('')+'<th class="sep">合計</th></tr>';
+  for(const x of rows){
+    tbl+=`<tr><td class="nm" style="color:${x.p.color}" title="${escapeHtml(x.p.name)}">${escapeHtml(x.p.name)}</td>`+
+      x.d.map((n,i)=>cell(n,i,i===0?'sep':'')).join('')+cell(x.dSum,5,'sub')+
+      x.o.map((n,i)=>cell(n,6+i,i===0?'sep':'')).join('')+cell(x.total,12,'tot sep')+'</tr>';
+  }
+  tbl+='</table>';
+  return '<div class="ws-cols">'+
+    `<div class="ws-res"><div class="ws-h">🌾 資源別の出数<span>ダイスで配られた枚数</span></div>${resHtml}</div>`+
+    `<div class="ws-tblw"><div class="ws-h">👥 プレイヤー別の入手枚数<span>緑＝その列の最多</span></div>${tbl}</div>`+
+  '</div>';
 }
 function checkVictory(){
   // Only check the current active player (VP can only be gained on your own turn)
@@ -3001,6 +3098,7 @@ function completeTrade(targetId){
   const giveSnap={...pendingTrade.give},wantSnap={...pendingTrade.want};
   for(const[r,n]of Object.entries(pendingTrade.give)){p1.resources[r]-=n;p2.resources[r]+=n;}
   for(const[r,n]of Object.entries(pendingTrade.want)){p2.resources[r]-=n;p1.resources[r]+=n;}
+  statAdd('trade',p1.id,sum(wantSnap));statAdd('trade',p2.id,sum(giveSnap));
   const gs=Object.entries(pendingTrade.give).map(([r,n])=>`${RES_JP[r]}×${n}`).join('+');
   const ws=Object.entries(pendingTrade.want).map(([r,n])=>`${RES_JP[r]}×${n}`).join('+');
   addLog(`🤝 ${p1.name}⇄${p2.name}: ${gs||'なし'}↔${ws||'なし'}`);
@@ -3612,6 +3710,7 @@ function aiUseDevCard(p){
         const aiGot=[];
         if(G.bank[r1]>0){p.resources[r1]++;G.bank[r1]--;aiGot.push(r1);}
         if(G.bank[r2]>0){p.resources[r2]++;G.bank[r2]--;aiGot.push(r2);}
+        statAdd('yop',p.id,aiGot.length);
         addLog(`${p.name}(AI) が発見: ${aiGot.map(r=>RES_JP[r]).join('＋')} を獲得`);
         showDevCardUsePopup(p,'yearOfPlenty');
         announceCardEffect(p,'yearOfPlenty',{res:aiGot});
@@ -3630,6 +3729,7 @@ function aiUseDevCard(p){
       mono.played=true;G.devPlayedThisTurn=true;
       const aiStolen={};let aiTotal=0;
       for(const op of G.players){if(op.id===p.id)continue;const a=op.resources[bestR];if(a>0){aiStolen[op.id]=a;aiTotal+=a;op.resources[bestR]=0;p.resources[bestR]+=a;}}
+      statAdd('mono',p.id,aiTotal);
       addLog(`${p.name}(AI) が独占: ${RES_JP[bestR]}`);
       showDevCardUsePopup(p,'monopoly');
       announceCardEffect(p,'monopoly',{res:bestR,total:aiTotal});
@@ -3805,6 +3905,7 @@ function aiTrade(p){
         if(G.bank[wantR]>0){
           p.resources[r]-=ratio;G.bank[r]+=ratio;
           p.resources[wantR]++;G.bank[wantR]--;
+          statAdd('bank',p.id,1);
           clampBank();
           addLog(`${p.name}(AI): ${RES_JP[r]}×${ratio}→${RES_JP[wantR]}`);
           updateUI();return true;
@@ -3839,6 +3940,7 @@ function _aiDumpSurplus(p){
   if(!want)return false;
   p.resources[give.r]-=give.ratio;G.bank[give.r]+=give.ratio;
   p.resources[want.r]++;G.bank[want.r]--;
+  statAdd('bank',p.id,1);
   clampBank();
   addLog(`${p.name}(AI): ${RES_JP[give.r]}×${give.ratio}→${RES_JP[want.r]}（余剰整理）`);
   updateUI();return true;
@@ -4506,6 +4608,8 @@ function serializeState(forPid){
   }
   g._undoSnapshot=G._undoSnapshot?1:null;
   g.devDeck=G.devDeck.map(()=>'?'); // 山札の中身はゲストに送らない
+  // 分析用の集計（独占の獲得枚数など伏せている情報を含む）は決着後にだけ送る
+  g.stats=G.winner!==-1?G.stats:null;
   // 一時停止の終了時刻は端末ごとに時計がずれるため「残り時間」で送る
   g.pause=G.pause?{left:Math.max(0,G.pause.until-Date.now()),by:G.pause.by}:null;
   const openHands=G.openHands==='on';
@@ -4599,6 +4703,18 @@ function sanitizeIncomingState(g){
   g.declareWin=g.declareWin==='off'?'off':'on';
   g.diceFx=g.diceFx==='off'?'off':'on';
   g.vpWin=(g.vpWin>=5&&g.vpWin<=20)?_num(g.vpWin):VP_WIN_DEFAULT;
+  const st={};
+  if(g.stats&&typeof g.stats==='object'){
+    for(const src of STAT_SRC){
+      const o=g.stats[src];if(!o||typeof o!=='object')continue;
+      st[src]={};
+      for(const k in o){
+        const pid=_num(k,-1);if(!(pid>=0&&pid<6))continue;
+        st[src][pid]=src==='dice'?_safeResMap(o[k]):_num(o[k]);
+      }
+    }
+  }
+  g.stats=st;
   const used={};
   if(g.pauseUsed&&typeof g.pauseUsed==='object')for(const k in g.pauseUsed){const n=_num(k,-1);if(n>=0&&n<6)used[n]=true;}
   g.pauseUsed=used;
@@ -4686,6 +4802,7 @@ function yopConfirmWith(picks){
     if(!G.bank[r]){addLog(`銀行に${RES_JP[r]}がない`);continue;}
     p.resources[r]++;G.bank[r]--;got.push(r);
   }
+  statAdd('yop',p.id,got.length);
   if(got.length)addLog(`${p.name} が発見: ${got.map(r=>RES_JP[r]).join('＋')} を獲得`);
   announceCardEffect(p,'yearOfPlenty',{res:got});
   G._yopPending=[];G.yopLeft=0;G._undoSnapshot=null;
@@ -4853,6 +4970,7 @@ function netCompleteTradeCore(targetId){
   const giveSnap={...pendingTrade.give},wantSnap={...pendingTrade.want};
   for(const[r,n]of Object.entries(giveSnap)){p1.resources[r]-=n;p2.resources[r]+=n;}
   for(const[r,n]of Object.entries(wantSnap)){p2.resources[r]-=n;p1.resources[r]+=n;}
+  statAdd('trade',p1.id,sum(wantSnap));statAdd('trade',p2.id,sum(giveSnap));
   const gs=Object.entries(giveSnap).map(([r,n])=>`${RES_JP[r]}×${n}`).join('+');
   const ws=Object.entries(wantSnap).map(([r,n])=>`${RES_JP[r]}×${n}`).join('+');
   addLog(`🤝 ${p1.name}⇄${p2.name}: ${gs||'なし'}↔${ws||'なし'}`);
