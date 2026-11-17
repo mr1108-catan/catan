@@ -93,6 +93,8 @@ $src = [regex]::Replace($src, '(<span title="[^"]*">)🛤️?<b>', '$1<span clas
 $anyEmoji = '(?:[\uD83C-\uD83E][\uDC00-\uDFFF]|[\u2300-\u23FF\u2600-\u27BF\u2B50])\uFE0F?[ \u3000]?'
 # action buttons: text only
 $src = [regex]::Replace($src, "(add\(')" + $anyEmoji, '$1')
+# bank trade button keeps its original (navy) color: give it its own class
+$src = $src.Replace("add('銀行取引','btn-s'", "add('銀行取引','btn-s btn-bank'")
 # special awards (right panel, award explanation, end-screen badges): text only
 $src = [regex]::Replace($src, "row\('[^']*',('(?:\u6700\u5927\u9A0E\u58EB\u529B|\u6700\u9577\u4EA4\u6613\u8DEF)')", 'row('''',$1')
 # (held awards are shown with their full name, not shortened)

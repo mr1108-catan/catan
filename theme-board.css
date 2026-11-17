@@ -29,6 +29,9 @@ button{border-radius:4px}
 .btn-undo{background:var(--paper-3);color:var(--ink-2);border:1px solid var(--line-2)}
 .btn-undo:hover:not(:disabled){background:var(--paper-4);border-color:var(--line-2)}
 .btn-win{background:var(--gold);color:#fff;border:1px solid #6b4500;box-shadow:none;animation:none}
+/* 銀行取引ボタンだけは元のデザインの紺色のまま */
+.btn-s.btn-bank{background:#1c3d5a;color:#c8dff0;border:1px solid #2e5a80}
+.btn-s.btn-bank:hover:not(:disabled){background:#264e72;border-color:#3a7aac}
 /* 行動ボタンは文字を中央に */
 #act-btns button{text-align:center}
 /* ヘッダー */
