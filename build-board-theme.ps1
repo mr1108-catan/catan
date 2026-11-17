@@ -95,7 +95,8 @@ $anyEmoji = '(?:[\uD83C-\uD83E][\uDC00-\uDFFF]|[\u2300-\u23FF\u2600-\u27BF\u2B50
 $src = [regex]::Replace($src, "(add\(')" + $anyEmoji, '$1')
 # special awards (right panel, award explanation, end-screen badges): text only
 $src = [regex]::Replace($src, "row\('[^']*',('(?:\u6700\u5927\u9A0E\u58EB\u529B|\u6700\u9577\u4EA4\u6613\u8DEF)')", 'row('''',$1')
-$src = $src.Replace('<span class="sp-label">${icon} ${p?short:full}', '<span class="sp-label">${icon?icon+'' '':''''}${p?short:full}')
+# (held awards are shown with their full name, not shortened)
+$src = $src.Replace('<span class="sp-label">${icon} ${p?short:full}', '<span class="sp-label">${icon?icon+'' '':''''}${full}')
 $src = [regex]::Replace($src, $anyEmoji + '(?=(?:\u6700\u5927\u9A0E\u58EB\u529B|\u6700\u9577\u4EA4\u6613\u8DEF))', '')
 $src = [regex]::Replace($src, '(<label[^>]*>)' + $anyEmoji, '$1')
 $src = [regex]::Replace($src, '(<option[^>]*>)' + $anyEmoji, '$1')

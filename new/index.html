@@ -445,6 +445,8 @@ button{border-radius:4px}
 .btn-undo{background:var(--paper-3);color:var(--ink-2);border:1px solid var(--line-2)}
 .btn-undo:hover:not(:disabled){background:var(--paper-4);border-color:var(--line-2)}
 .btn-win{background:var(--gold);color:#fff;border:1px solid #6b4500;box-shadow:none;animation:none}
+/* 行動ボタンは文字を中央に */
+#act-btns button{text-align:center}
 /* ヘッダー */
 #hdr{background:var(--bar);border-bottom:1px solid #1a120b;box-shadow:0 2px 0 rgba(0,0,0,.25)}
 #hdr h1{color:var(--bar-ink);text-shadow:none;letter-spacing:.08em;font-weight:800}
@@ -4658,7 +4660,7 @@ function updateSpecial(){
   const lr=G.longestRoad!==-1?G.players[G.longestRoad]:null;
   // 未所持のときは従来どおりの名称。所持者がいるときだけ見出しを短縮して1行に収める
   const row=(icon,full,short,p,detail)=>
-    `<div class="bank-row sp-row"><span class="sp-label">${icon?icon+' ':''}${p?short:full}</span>`+
+    `<div class="bank-row sp-row"><span class="sp-label">${icon?icon+' ':''}${full}</span>`+
     `<span class="sp-holder" style="color:${p?.color||'#555'}">`+
     (p?`<span class="sp-name">${escapeHtml(p.name)}</span><span class="sp-num">${detail}</span>`:'なし')+
     `</span></div>`;

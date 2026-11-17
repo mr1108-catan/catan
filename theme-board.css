@@ -29,6 +29,8 @@ button{border-radius:4px}
 .btn-undo{background:var(--paper-3);color:var(--ink-2);border:1px solid var(--line-2)}
 .btn-undo:hover:not(:disabled){background:var(--paper-4);border-color:var(--line-2)}
 .btn-win{background:var(--gold);color:#fff;border:1px solid #6b4500;box-shadow:none;animation:none}
+/* 行動ボタンは文字を中央に */
+#act-btns button{text-align:center}
 /* ヘッダー */
 #hdr{background:var(--bar);border-bottom:1px solid #1a120b;box-shadow:0 2px 0 rgba(0,0,0,.25)}
 #hdr h1{color:var(--bar-ink);text-shadow:none;letter-spacing:.08em;font-weight:800}
