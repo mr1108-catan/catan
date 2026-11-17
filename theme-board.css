@@ -36,6 +36,10 @@ button{border-radius:4px}
 #hdr-info b,#hdr-info strong{color:#f3e7cc}
 /* 机（盤面の周り） */
 #mid{background:var(--wood);background-image:var(--wood-grain)}
+/* 開始前（入口・ロビー・設定画面）は、まだ中身のないゲーム用パネルを出さず机だけ見せる */
+body:has(#net-ov:not(.hidden)) :is(#ctrl-panel,#mid-right,#cost-panel,#mid-left),
+body:has(#setup-ov:not(.hidden)) :is(#ctrl-panel,#mid-right,#cost-panel,#mid-left){visibility:hidden}
+body:has(#net-ov:not(.hidden)) #hdr-info,body:has(#setup-ov:not(.hidden)) #hdr-info{visibility:hidden}
 /* パネル類は厚紙 */
 #mid-left{background:transparent;padding:0}
 #ctrl-panel,.side-sec,#cost-panel .info-card{background:var(--paper);border:1px solid var(--line-2);border-radius:4px;box-shadow:0 1px 0 rgba(0,0,0,.35)}
