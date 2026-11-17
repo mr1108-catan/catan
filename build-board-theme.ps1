@@ -1,4 +1,4 @@
-# Build the "board game" design (A) version from catan6-online.html.
+﻿# Build the "board game" design (A) version from catan6-online.html.
 #   - swaps the dark UI colors for theme variables (see theme-board.css)
 #   - removes decorative emoji (resources, VP, dev cards, pieces, dice etc. are kept)
 #   - injects fonts + theme-board.css
@@ -59,6 +59,10 @@ $deco = @(
   '\uD83E\uDD16','\uD83D\uDC64'
 )
 $src = [regex]::Replace($src, '(?:' + ($deco -join '|') + ')\uFE0F?[ \u3000]?', '')
+# player card: remaining pieces are written as words instead of icons
+$src = [regex]::Replace($src, '(<span title="[^"]*">)🏠️?<b>', '$1<span class="pk">開拓地</span><b>')
+$src = [regex]::Replace($src, '(<span title="[^"]*">)🏙️?<b>', '$1<span class="pk">都市</span><b>')
+$src = [regex]::Replace($src, '(<span title="[^"]*">)🛤️?<b>', '$1<span class="pk">街道</span><b>')
 # settings labels / select options: drop any leading emoji so every row reads the same
 $anyEmoji = '(?:[\uD83C-\uD83E][\uDC00-\uDFFF]|[\u2600-\u27BF\u2B50])\uFE0F?[ \u3000]?'
 $src = [regex]::Replace($src, '(<label[^>]*>)' + $anyEmoji, '$1')

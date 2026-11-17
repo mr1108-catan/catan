@@ -55,6 +55,8 @@ button{border-radius:4px}
 .pc .pieces{color:var(--ink-2)}
 .pc .pieces b{color:var(--ink)}
 .pc .pieces .pl{background:var(--paper-3);border-color:var(--line);color:var(--ink-2)}
+.pc .pieces{gap:7px}
+.pc .pieces .pk{font-size:11px;color:var(--ink-2);margin-right:2px}
 .pc .chip.hand{background:var(--paper-3);color:var(--ink);border:1px solid var(--line)}
 .pc .used-col{background:rgba(110,74,126,.1);border-color:rgba(110,74,126,.45)}
 .pc .used-col .uc-row{color:#4e3360}

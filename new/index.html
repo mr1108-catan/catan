@@ -471,6 +471,8 @@ button{border-radius:4px}
 .pc .pieces{color:var(--ink-2)}
 .pc .pieces b{color:var(--ink)}
 .pc .pieces .pl{background:var(--paper-3);border-color:var(--line);color:var(--ink-2)}
+.pc .pieces{gap:7px}
+.pc .pieces .pk{font-size:11px;color:var(--ink-2);margin-right:2px}
 .pc .chip.hand{background:var(--paper-3);color:var(--ink);border:1px solid var(--line)}
 .pc .used-col{background:rgba(110,74,126,.1);border-color:rgba(110,74,126,.45)}
 .pc .used-col .uc-row{color:#4e3360}
@@ -4428,9 +4430,9 @@ function makePlayerCard(p){
       // 名前と資源の間: 残りのコマ数
       '<div class="pieces" title="手元に残っているコマの数">'+
         '<span class="pl">残り</span>'+
-        '<span title="開拓地の残り">🏠<b>'+p.settlements+'</b></span>'+
-        '<span title="都市の残り">🏙<b>'+p.cities+'</b></span>'+
-        '<span title="街道の残り">🛤<b>'+p.roads+'</b></span>'+
+        '<span title="開拓地の残り"><span class="pk">開拓地</span><b>'+p.settlements+'</b></span>'+
+        '<span title="都市の残り"><span class="pk">都市</span><b>'+p.cities+'</b></span>'+
+        '<span title="街道の残り"><span class="pk">街道</span><b>'+p.roads+'</b></span>'+
       '</div>'+
       // 資源の内訳を出すカードは、チップの枚数が変わってもカードの高さが変わらないよう常に2段分の場所を取る
       (showRes?'<div class="prow2 res">'+resHtml+'</div>':(resHtml?'<div class="prow2">'+resHtml+'</div>':''))+
