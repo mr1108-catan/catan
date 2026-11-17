@@ -29,9 +29,9 @@ button{border-radius:4px}
 .btn-undo{background:var(--paper-3);color:var(--ink-2);border:1px solid var(--line-2)}
 .btn-undo:hover:not(:disabled){background:var(--paper-4);border-color:var(--line-2)}
 .btn-win{background:var(--gold);color:#fff;border:1px solid #6b4500;box-shadow:none;animation:none}
-/* 銀行取引ボタンは深い緑（カード使用の緑より暗く青みを帯びた色で見分けられるように） */
-.btn-s.btn-bank{background:#1f4a35;color:#fff;border:1px solid #163626}
-.btn-s.btn-bank:hover:not(:disabled){background:#173a29;border-color:#0f281c}
+/* 銀行取引ボタンは深めのオレンジ（ターン終了の朱色より黄みに寄せて見分けられるように） */
+.btn-s.btn-bank{background:#b8621b;color:#fff;border:1px solid #8f4a12}
+.btn-s.btn-bank:hover:not(:disabled){background:#9a5216;border-color:#73390d}
 /* 行動ボタンは文字を中央に */
 #act-btns button{text-align:center}
 /* ヘッダー */
