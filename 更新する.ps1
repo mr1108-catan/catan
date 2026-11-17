@@ -1,4 +1,4 @@
-# カタンのゲームを更新して公開サイトに反映するスクリプト
+﻿# カタンのゲームを更新して公開サイトに反映するスクリプト
 # 使い方: このファイルを右クリック →「PowerShell で実行」
 #   または PowerShell で  & "C:\Users\mrs11\catan-web\更新する.ps1"
 
@@ -10,6 +10,7 @@ $url  = 'https://mr1108-catan.github.io/catan/'
 
 Write-Host '■ ゲームファイルをコピーしています...' -ForegroundColor Cyan
 Copy-Item $src (Join-Path $dir 'index.html') -Force
+& (Join-Path $dir 'build-board-theme.ps1')
 
 Set-Location $dir
 git add -A

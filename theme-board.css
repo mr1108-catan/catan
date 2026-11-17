@@ -1,0 +1,142 @@
+/* ===== デザインA「ボードゲーム風」: 木目の机 × 厚紙のパネル =====
+   build-board-theme.ps1 が catan6-online.html の <style> の末尾に差し込む */
+:root{
+  --wood:#4b3524;--bar:#2e2016;--bar-ink:#f3e7cc;
+  --paper:#efe4cc;--paper-2:#f6eedb;--paper-3:#e6d8b8;--paper-4:#dccaa2;--card-cur:#fff7e4;
+  --line:#c9b48e;--line-2:#9a7b55;--line-soft:#ddcdaa;
+  --ink:#2b2118;--ink-2:#5c4b38;--ink-3:#8a7660;
+  --head:#6b2e17;--accent:#b2452c;--accent-2:#8f341f;--accent-ink:#fff8ec;--accent-soft:rgba(178,69,44,.12);
+  --gold:#8a5a00;--ok:#3f6b33;--ok-ink:#fff;--ok-soft:rgba(63,107,51,.12);
+  --ng:#a9442b;--ng-soft:rgba(169,68,43,.1);--info:#2f5d7c;
+  --font-head:'Shippori Mincho B1','Yu Mincho',serif;
+  --wood-grain:repeating-linear-gradient(90deg,rgba(0,0,0,.055) 0 2px,transparent 2px 7px),
+               repeating-linear-gradient(90deg,rgba(255,255,255,.022) 0 1px,transparent 1px 23px);
+}
+body{font-family:'Zen Kaku Gothic New','Yu Gothic',Meiryo,sans-serif;background:var(--wood);background-image:var(--wood-grain);color:var(--ink)}
+h1,h2,h3,.sec-h,.setup-h,.ws-h,.pz-title,.aw-title,.tv-who{font-family:var(--font-head)}
+/* ボタン: グラデーションと発光をやめ、紙の上の札のような平らな見た目に */
+button{border-radius:4px}
+.btn-p{background:var(--accent);color:var(--accent-ink);box-shadow:0 1px 0 rgba(0,0,0,.25);border:1px solid var(--accent-2)}
+.btn-p:hover:not(:disabled){background:var(--accent-2);transform:none}
+.btn-s{background:var(--paper-3);color:var(--ink);border:1px solid var(--line-2)}
+.btn-s:hover:not(:disabled){background:var(--paper-4);border-color:var(--line-2)}
+.btn-d{background:var(--ng);color:#fff}
+.btn-d:hover:not(:disabled){background:#8a3420}
+.btn-g{background:var(--ok);color:#fff}
+.btn-g:hover:not(:disabled){background:#33592a}
+.btn-ai{background:#6e4a7e;color:#fff}
+.btn-ai:hover:not(:disabled){background:#5d3d6b}
+.btn-undo{background:var(--paper-3);color:var(--ink-2);border:1px solid var(--line-2)}
+.btn-undo:hover:not(:disabled){background:var(--paper-4);border-color:var(--line-2)}
+.btn-win{background:var(--gold);color:#fff;border:1px solid #6b4500;box-shadow:none;animation:none}
+/* ヘッダー */
+#hdr{background:var(--bar);border-bottom:1px solid #1a120b;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+#hdr h1{color:var(--bar-ink);text-shadow:none;letter-spacing:.08em;font-weight:800}
+#hdr-info{color:#cdbb98}
+#hdr-info b,#hdr-info strong{color:#f3e7cc}
+/* 机（盤面の周り） */
+#mid{background:var(--wood);background-image:var(--wood-grain)}
+/* パネル類は厚紙 */
+#mid-left{background:transparent;padding:0}
+#ctrl-panel,.side-sec,#cost-panel .info-card{background:var(--paper);border:1px solid var(--line-2);border-radius:4px;box-shadow:0 1px 0 rgba(0,0,0,.35)}
+#dice-box,#status{background:var(--paper-2);border:1px solid var(--line);border-radius:4px}
+#status{color:var(--ink)}
+.sec-h,.setup-h{color:var(--head);border-bottom-color:var(--line);font-weight:800;letter-spacing:.06em}
+.bank-row{border-bottom-color:var(--line-soft)}
+.bank-val{color:var(--ink)}
+#log{color:var(--ink-2)}
+#log div{border-bottom:1px dotted var(--line)}
+/* プレイヤーカード */
+.pc{background:var(--paper-2);border:1px solid var(--line-2);border-left-width:5px;border-radius:4px;box-shadow:0 1px 0 rgba(0,0,0,.35)}
+.pc.cur{background:var(--card-cur);box-shadow:0 0 0 2px var(--accent),0 1px 0 rgba(0,0,0,.35)}
+.pc .pn{filter:brightness(.78) saturate(1.15)}
+.pc.bright{filter:none;box-shadow:0 0 0 2px var(--gold),0 1px 0 rgba(0,0,0,.35)}
+.pc .pai{background:var(--paper-4);color:var(--ink-2);border:1px solid var(--line-2);border-radius:3px}
+.pc .pieces{color:var(--ink-2)}
+.pc .pieces b{color:var(--ink)}
+.pc .pieces .pl{background:var(--paper-3);border-color:var(--line);color:var(--ink-2)}
+.pc .chip.hand{background:var(--paper-3);color:var(--ink);border:1px solid var(--line)}
+.pc .used-col{background:rgba(110,74,126,.1);border-color:rgba(110,74,126,.45)}
+.pc .used-col .uc-row{color:#4e3360}
+@keyframes burstBlink{0%,100%{background:#f3c9b8;box-shadow:0 0 0 2px var(--ng)}50%{background:var(--paper-2);box-shadow:none}}
+.pc.burst{border-left-color:var(--ng)!important}
+/* 資源などのチップ: 紙の上でも読めるよう落ち着いた色の札に */
+.chip{border-radius:3px}
+.rd{background:#3e5f75;color:#eef6fb}
+.rk{background:#6e4a7e;color:#f7ecfb}
+/* モーダル */
+.ov{background:rgba(30,18,8,.55);backdrop-filter:none}
+.modal{background:var(--paper);border:1px solid var(--line-2);border-radius:4px;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+.modal h3{color:var(--head);font-weight:800;letter-spacing:.04em}
+.ov.side>.modal{border-radius:4px 0 0 4px;box-shadow:-4px 0 18px rgba(0,0,0,.4)}
+select,input[type=text],input[type=number]{background:var(--paper-2)!important;color:var(--ink)!important;border:1px solid var(--line-2)!important;border-radius:3px!important}
+.setup-cols>.setup-pane{background:var(--paper-2);border-color:var(--line)}
+.setup-item label{color:var(--ink)}
+.swatch{border-color:rgba(0,0,0,.25)}
+.ai-chk{color:#5d3d6b}
+.turn-strip{background:var(--paper-2);border-color:var(--line)}
+.turn-chip{background:var(--paper-3)}
+.steal-btn,.yop-btn,.mono-btn,.dev-item{background:var(--paper-2);border:1px solid var(--line-2);color:var(--ink);border-radius:4px}
+.steal-btn:hover,.yop-btn:hover,.mono-btn:hover{background:var(--paper-4)}
+.dev-name{color:var(--head)}
+/* 取引の入力表 */
+.tt-row{background:var(--paper-2);border-color:var(--line);border-radius:4px}
+.tt-row.g{background:var(--ng-soft);border-color:rgba(169,68,43,.5)}
+.tt-row.w{background:var(--ok-soft);border-color:rgba(63,107,51,.5)}
+.tt-nm{color:var(--ink)}
+.tt-sub b{color:var(--ink)}
+.tt-tag{background:var(--paper-4);color:var(--ink-2)}
+.tt-tag.port{background:#d7e3c8;color:#33552a}
+.tt-tag.none{background:#efc9bd;color:#7d2b17}
+.tt-step{background:var(--paper);border-color:var(--line-2);border-radius:4px}
+.tt-step button{background:var(--paper-3);color:var(--ink)}
+.tt-step button:hover:not(:disabled){background:var(--paper-4)}
+.tt-step input{color:var(--ink)!important;background:transparent!important;border:none!important}
+.tt-row.g .tt-step.give input{color:var(--ng)!important}
+.tt-row.w .tt-step.get input{color:var(--ok)!important}
+.tt-head .hg{color:var(--ng)}.tt-head .hw{color:var(--ok)}
+.tv-box{border-radius:4px}
+.tv-box.give{background:var(--ng-soft);border-color:rgba(169,68,43,.55)}
+.tv-box.get{background:var(--ok-soft);border-color:rgba(63,107,51,.55)}
+.tv-box.give .tv-lab{color:var(--ng)}.tv-box.get .tv-lab{color:var(--ok)}
+/* 建設コスト・特別賞 */
+.cost-name{color:var(--ink)}
+.aw-title{color:var(--ink)}
+.aw-now{background:var(--paper-2);border:1px solid var(--line-soft)}
+/* 一時停止 */
+#pause-btn{background:var(--paper);color:var(--ink);border:1px solid var(--line-2);border-radius:4px;box-shadow:0 1px 0 rgba(0,0,0,.35)}
+#pause-btn:hover{filter:none;background:var(--paper-3)}
+#pause-ov{background:rgba(30,18,8,.6)}
+#pause-ov .pz-box{background:var(--paper);border:1px solid var(--line-2);border-radius:4px}
+#pause-ov .pz-title{color:var(--head)}
+#pause-ov .pz-time{color:var(--accent)}
+#pz-host{background:var(--paper-2);border-color:var(--line);border-radius:4px}
+#pz-host .pz-seg{background:var(--paper);color:var(--ink-2);border-color:var(--line-2)}
+#pz-host .pz-seg.on{background:var(--info);color:#fff;border-color:var(--info)}
+/* ダイス */
+#dice-announce{background:var(--paper);border:1px solid var(--line-2);border-radius:6px;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+#dice-fx{background:var(--paper);border:1px solid var(--line-2);border-radius:6px;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+#dice-fx .dfx-plate{background:rgba(239,228,204,.82);border:1px solid var(--line-2);border-radius:4px;box-shadow:0 2px 10px rgba(0,0,0,.35);backdrop-filter:none}
+#dice-fx.frameout .dfx-plate{background:rgba(239,228,204,.82);border-color:var(--line-2)}
+#dice-fx .dfx-num{color:var(--ink);-webkit-text-stroke:0;text-shadow:none;font-family:var(--font-head)}
+#dice-fx .dfx-sub{-webkit-text-stroke:0;text-shadow:none}
+#dice-fx.frameout .dfx-dice,#dice-fx.frameout .dfx-result{text-shadow:none}
+/* 資源が飛ぶ演出は光らせず、紙の札が動くだけにする */
+.fly-card{box-shadow:0 3px 10px rgba(0,0,0,.45);border:1px solid rgba(0,0,0,.35);text-shadow:none;border-radius:4px}
+/* 勝利画面 */
+#win-banner{background:rgba(30,18,8,.82)}
+#win-banner h2{color:var(--bar-ink);text-shadow:none;animation:none;font-family:var(--font-head);letter-spacing:.1em}
+#win-banner p{color:var(--bar-ink)}
+#win-ranking,#win-dice-log,#win-stats{background:var(--paper)!important;border:1px solid var(--line-2)!important;border-radius:4px!important;color:var(--ink)!important}
+.ws-h{color:var(--head)}
+.ws-bar .bt{background:var(--paper-3)}
+.ws-bar .bv{color:var(--ink)}
+.ws-tbl th.grp{color:var(--ink)}
+.ws-tbl td.tot{color:var(--ink);background:rgba(0,0,0,.04)}
+.ws-tbl td.sub{color:var(--gold);background:rgba(138,90,0,.06)}
+.ws-tbl td.selfc{color:#8a5a00;background:rgba(138,90,0,.05)}
+/* 一覧で使う CPU の目印（絵文字の代わり） */
+.cpu-tag{display:inline-block;font-size:10px;font-weight:700;line-height:1.4;padding:0 4px;margin-right:3px;border-radius:3px;
+  border:1px solid var(--line-2);color:var(--ink-2);background:var(--paper-3);vertical-align:1px;font-family:'Zen Kaku Gothic New',sans-serif}
+/* スクロールバー */
+::-webkit-scrollbar-track{background:rgba(0,0,0,.08)}::-webkit-scrollbar-thumb{background:var(--line-2)}
