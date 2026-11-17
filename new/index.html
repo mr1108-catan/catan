@@ -2754,8 +2754,8 @@ function renderWinBanner(p){
       const roadLen=computeRoadLen(pl.id);
       const hasLA=G.largestArmy===pl.id;
       const hasLR=G.longestRoad===pl.id;
-      const badges=(hasLA?`<span style="background:#2a1a50;color:#cc88ff;border-radius:4px;padding:1px 5px;font-size:11px;margin-left:3px">⚔️最大騎士力</span>`:'')
-                  +(hasLR?`<span style="background:#1a3a20;color:#88ff88;border-radius:4px;padding:1px 5px;font-size:11px;margin-left:3px">🛤️最長交易路</span>`:'');
+      const badges=(hasLA?`<span style="background:#2a1a50;color:#cc88ff;border-radius:4px;padding:1px 5px;font-size:11px;margin-left:3px">最大騎士力</span>`:'')
+                  +(hasLR?`<span style="background:#1a3a20;color:#88ff88;border-radius:4px;padding:1px 5px;font-size:11px;margin-left:3px">最長交易路</span>`:'');
       rankHtml+=`<div style="display:flex;align-items:center;gap:10px;padding:6px 8px;margin:3px 0;border-radius:7px;`+
         `background:${isWinner?'var(--accent-soft)':'rgba(0,0,0,.03)'};`+
         `border:1px solid ${isWinner?'rgba(244,164,96,.4)':'var(--line-soft)'}">` +
@@ -4638,12 +4638,12 @@ function updateAwardPanel(ownerId){
   el.innerHTML=
     '<div style="font-size:11px;color:var(--accent);font-weight:700;border-bottom:1px solid var(--line);padding-bottom:4px">特別賞（各 ＋2点）</div>'+
     '<div class="aw-block">'+
-      '<div class="aw-title"><span>🛤️ 最長交易路</span><span class="cost-vp">＋2点</span></div>'+
+      '<div class="aw-title"><span>最長交易路</span><span class="cost-vp">＋2点</span></div>'+
       '<div class="aw-rule"><b style="color:var(--ink)">一筆書き</b>でたどれる5本以上の街道が最も長い人（枝分かれした部分は数えない）</div>'+
       `<div class="aw-now">${mine(myRoad,roadNeed,'本',lr&&me&&lr.id===me.id)}</div>`+
     '</div>'+
     '<div class="aw-block">'+
-      '<div class="aw-title"><span>⚔️ 最大騎士力</span><span class="cost-vp">＋2点</span></div>'+
+      '<div class="aw-title"><span>最大騎士力</span><span class="cost-vp">＋2点</span></div>'+
       '<div class="aw-rule">騎士カードを3回以上使い、最も多い人</div>'+
       `<div class="aw-now">${mine(myArmy,armyNeed,'回',la&&me&&la.id===me.id)}</div>`+
     '</div>'+
@@ -4658,13 +4658,13 @@ function updateSpecial(){
   const lr=G.longestRoad!==-1?G.players[G.longestRoad]:null;
   // 未所持のときは従来どおりの名称。所持者がいるときだけ見出しを短縮して1行に収める
   const row=(icon,full,short,p,detail)=>
-    `<div class="bank-row sp-row"><span class="sp-label">${icon} ${p?short:full}</span>`+
+    `<div class="bank-row sp-row"><span class="sp-label">${icon?icon+' ':''}${p?short:full}</span>`+
     `<span class="sp-holder" style="color:${p?.color||'#555'}">`+
     (p?`<span class="sp-name">${escapeHtml(p.name)}</span><span class="sp-num">${detail}</span>`:'なし')+
     `</span></div>`;
   document.getElementById('special-display').innerHTML=
-    row('⚔️','最大騎士力','騎士力',la,la?`${la.knights}`:'')+
-    row('🛤️','最長交易路','交易路',lr,lr?`${G.longestRoadSize}`:'');
+    row('','最大騎士力','騎士力',la,la?`${la.knights}`:'')+
+    row('','最長交易路','交易路',lr,lr?`${G.longestRoadSize}`:'');
 }
 
 function updateActionButtons(){
@@ -4691,10 +4691,10 @@ function updateActionButtons(){
       return;
     }
     if(G.declareWin!=='off'&&p.vp+p.vpCards>=vpWin())add('勝利宣言！','btn-win',declareVictory);
-    add('🎲 サイコロを振る','btn-p btn-roll',rollDice);
+    add('サイコロを振る','btn-p btn-roll',rollDice);
     // アクティブプレイヤーはロール前の発展カード使用が可能
     const hasPlayable=p.devCards.some(c=>!c.played&&c.type!=='vp'&&!c.newThisTurn);
-    if(hasPlayable&&!G.devPlayedThisTurn)add('🃏 カード使用（ロール前）','btn-g',()=>{G._preRollPlay=true;showDevCards();});
+    if(hasPlayable&&!G.devPlayedThisTurn)add('カード使用（ロール前）','btn-g',()=>{G._preRollPlay=true;showDevCards();});
   } else if(ph==='robber'){
     const b=document.createElement('div');
     b.style.cssText='color:var(--ng);font-size:12px;text-align:center;padding:6px 4px;background:var(--ng-soft);border-radius:7px;border:1px solid var(--ng);line-height:1.5';
@@ -4702,25 +4702,25 @@ function updateActionButtons(){
     btns.appendChild(b);
   } else if(ph==='main-action'){
     if(G.declareWin!=='off'&&p.vp+p.vpCards>=vpWin())add('勝利宣言！','btn-win',declareVictory);
-    add('🛤 街道',`btn-s`,tryBuildRoad,!canAfford(p,'road')||!p.roads,COST_JP.road);
-    add('🏠 開拓地','btn-s',tryBuildSettlement,!canAfford(p,'settlement')||!p.settlements,COST_JP.settlement);
-    add('🏙 都市','btn-s',tryBuildCity,!canAfford(p,'city')||!p.cities,COST_JP.city);
-    add('📜 発展カード購入','btn-s',tryBuyDevCard,!canAfford(p,'devCard')||!G.devDeck.length,COST_JP.devCard);
+    add('街道',`btn-s`,tryBuildRoad,!canAfford(p,'road')||!p.roads,COST_JP.road);
+    add('開拓地','btn-s',tryBuildSettlement,!canAfford(p,'settlement')||!p.settlements,COST_JP.settlement);
+    add('都市','btn-s',tryBuildCity,!canAfford(p,'city')||!p.cities,COST_JP.city);
+    add('発展カード購入','btn-s',tryBuyDevCard,!canAfford(p,'devCard')||!G.devDeck.length,COST_JP.devCard);
     add('銀行取引','btn-s',showTradeModal);
     add('交渉','btn-ai',showPlayerTradeModal);
-    if(p.devCards.some(c=>!c.played&&c.type!=='vp'&&!c.newThisTurn))add('🃏 カード使用','btn-g',showDevCards);
+    if(p.devCards.some(c=>!c.played&&c.type!=='vp'&&!c.newThisTurn))add('カード使用','btn-g',showDevCards);
     if(G._undoSnapshot)add('巻き戻し','btn-undo',undoLastAction);
-    add('⏭ ターン終了','btn-p',endTurn);
+    add('ターン終了','btn-p',endTurn);
   } else if(ph==='special-build'){
     // 2番手プレイヤー: 建設・銀行取引・発展カードの購入/使用が可能（交渉は不可）
-    add('🛤 街道','btn-s',()=>sbBuildRoad(),!canAfford(p,'road')||!p.roads);
-    add('🏠 開拓地','btn-s',()=>sbBuildSettlement(),!canAfford(p,'settlement')||!p.settlements);
-    add('🏙 都市','btn-s',()=>sbBuildCity(),!canAfford(p,'city')||!p.cities);
-    add('📜 発展カード購入','btn-s',tryBuyDevCard,!canAfford(p,'devCard')||!G.devDeck.length,COST_JP.devCard);
+    add('街道','btn-s',()=>sbBuildRoad(),!canAfford(p,'road')||!p.roads);
+    add('開拓地','btn-s',()=>sbBuildSettlement(),!canAfford(p,'settlement')||!p.settlements);
+    add('都市','btn-s',()=>sbBuildCity(),!canAfford(p,'city')||!p.cities);
+    add('発展カード購入','btn-s',tryBuyDevCard,!canAfford(p,'devCard')||!G.devDeck.length,COST_JP.devCard);
     add('銀行取引','btn-s',showTradeModal);
-    if(p.devCards.some(c=>!c.played&&c.type!=='vp'&&!c.newThisTurn))add('🃏 カード使用','btn-g',showDevCards);
+    if(p.devCards.some(c=>!c.played&&c.type!=='vp'&&!c.newThisTurn))add('カード使用','btn-g',showDevCards);
     if(G._undoSnapshot)add('巻き戻し','btn-undo',undoLastAction);
-    add('⏭ パス','btn-p',endSpecialBuild);
+    add('パス','btn-p',endSpecialBuild);
   }
 }
 
