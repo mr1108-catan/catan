@@ -35,12 +35,38 @@ $map = [ordered]@{
   'rgba(244,164,96,.16)'='var(--accent-soft)'; 'rgba(244,164,96,.15)'='var(--accent-soft)'
   'rgba(255,255,255,.1)'='var(--line)'; 'rgba(255,255,255,.06)'='var(--line-soft)'
   'rgba(255,255,255,.03)'='rgba(0,0,0,.03)'; 'rgba(40,80,130,.4)'='var(--paper-3)'
+  # notices / popups that had their own dark background and light text
+  'rgba(0,80,20,.97)'='var(--paper)'; 'rgba(90,0,0,.97)'='var(--paper)'; '#3a0808'='var(--paper)'; '#3a1010'='var(--paper-3)'; '#2a0808'='var(--ng-soft)'
+  '#44ff88'='var(--ok)'; '#ff5555'='var(--ng)'; 'rgba(50,255,100,.5)'='rgba(0,0,0,.2)'; 'rgba(255,50,50,.6)'='rgba(0,0,0,.2)'; 'rgba(154,79,220,.45)'='rgba(0,0,0,.2)'
+  '#ffeecc'='var(--ink)'; '#ffccaa'='var(--ng)'; '#ffaaaa'='var(--ng)'; '#ff6666'='var(--ng)'; '#ff8a7a'='var(--ng)'
+  '#f4d03f'='var(--gold)'; '#ffcc55'='var(--gold)'; '#c8a060'='var(--gold)'
+  '#c890ff'='#6e4a7e'; '#e8b0ff'='#6e4a7e'; '#9aaecc'='var(--ink-2)'; '#aaa'='var(--ink-3)'
+  # end screen dice chart
+  '#a0c0e0'='var(--ink-2)'; '#e05555'='var(--ng)'; 'rgba(255,255,255,.18)'='rgba(0,0,0,.14)'
+  # white text that sat on a dark popup background
+  'color:#fff;font-size:14px;margin-top:4px'='color:var(--ink);font-size:14px;margin-top:4px'
+  'color:#fff;font-size:14px;margin-top:5px'='color:var(--ink);font-size:14px;margin-top:5px'
+  'color:#fff;font-size:15px;margin-top:5px'='color:var(--ink);font-size:15px;margin-top:5px'
+  'font-weight:700;color:#fff;padding:14px'='font-weight:700;color:var(--ink);padding:14px'
+  'font-size:20px;font-weight:700;color:#fff">'='font-size:20px;font-weight:700;color:var(--ink)">'
 }
 foreach ($k in $map.Keys) {
   $pat = [regex]::Escape($k)
   if ($k.StartsWith('#')) { $pat += '(?![0-9a-fA-F])' }
   $src = [regex]::Replace($src, $pat, $map[$k], 'IgnoreCase')
 }
+
+# ---- 1b) player colors used as TEXT are darkened so they read on paper ----
+$src = [regex]::Replace($src, '(const PCOLORS\s*=\s*\[[^\]]*\];)', '$1' + "`n" +
+  "const PCOLOR_INK={'#f03525':'#bd2a1c','#1db85e':'#137a3c','#1a90e0':'#1563a3','#ff9500':'#9a5200','#9e30c8':'#7a2299','#ff10a0':'#b80a72'};" +
+  "function inkOf(c){return PCOLOR_INK[c]||c;}" +
+  "const RES_CHIP={wood:'#2f6a28',brick:'#9a3f26',sheep:'#557f28',wheat:'#96700a',ore:'#55587a'};")
+# resource chips drawn with the bright tile color + white text -> darker chip colors
+$src = $src.Replace('background:${RES_COLOR[r]};color:#fff', 'background:${RES_CHIP[r]||RES_COLOR[r]};color:#fff')
+$src = [regex]::Replace($src, 'color:\$\{([A-Za-z_][\w.]*)\.color\}', { param($m) 'color:${inkOf(' + $m.Groups[1].Value + '.color)}' })
+$src = $src.Replace('color:${color};', 'color:${inkOf(color)};')
+$src = $src.Replace('color:${PCOLORS[ci]||', 'color:${inkOf(PCOLORS[ci])||')
+$src = [regex]::Replace($src, "color:'\+([A-Za-z_][\w.]*)\.color\+", { param($m) "color:'+inkOf(" + $m.Groups[1].Value + ".color)+" })
 
 # ---- 2) emoji ----
 # CPU / human markers in lists -> small "CPU" label

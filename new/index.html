@@ -225,7 +225,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 .ws-tbl td.sub{font-weight:800;color:var(--gold);background:rgba(255,232,128,.05)}
 .ws-tbl td.tot{font-weight:900;color:#fff;background:rgba(255,255,255,.05)}
 .ws-tbl td.top{color:var(--ok);font-weight:900}
-.ws-tbl td.worst{color:#ff8a7a;font-weight:900}
+.ws-tbl td.worst{color:var(--ng);font-weight:900}
 .ws-tbl td.selfc{font-size:12px;color:#ffcf6a;background:rgba(255,207,106,.05)}
 .ws-tbl td.selfc.z{color:var(--ink-3)}
 .ws-tbl .sep{border-left:1px solid var(--line)}
@@ -338,11 +338,11 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
 }
 
 /* Burst blink (7 rolled discard) */
-@keyframes burstBlink{0%,100%{background:#3a0808;box-shadow:0 0 14px rgba(255,60,60,.9)}50%{background:var(--paper-2);box-shadow:none}}
+@keyframes burstBlink{0%,100%{background:var(--paper);box-shadow:0 0 14px rgba(255,60,60,.9)}50%{background:var(--paper-2);box-shadow:none}}
 .pc.burst{animation:burstBlink .45s ease-in-out 6;border-left-color:#ff4444!important}
 /* Undo button */
 .btn-undo{background:linear-gradient(135deg,#4a3010,#2a1a08);color:#ffcc88;border:1px solid #8a6030;font-size:12px;padding:5px 8px}
-.btn-undo:hover:not(:disabled){background:linear-gradient(135deg,#5a4018,#3a2210);border-color:#c8a060}
+.btn-undo:hover:not(:disabled){background:linear-gradient(135deg,#5a4018,#3a2210);border-color:var(--gold)}
 .btn-win{background:linear-gradient(135deg,#c8a800,#a87800);color:#fff8e0;border:2px solid #ffe060;box-shadow:0 0 14px rgba(255,220,60,.6);font-size:14px;font-weight:800;animation:winpulse 1.1s ease-in-out infinite alternate}
 @keyframes winpulse{from{box-shadow:0 0 10px rgba(255,220,60,.5)}to{box-shadow:0 0 22px rgba(255,220,60,.9)}}
 /* Scrollbar */
@@ -420,7 +420,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:auto;opacity:1;
   --wood:#4b3524;--bar:#2e2016;--bar-ink:#f3e7cc;
   --paper:#efe4cc;--paper-2:#f6eedb;--paper-3:#e6d8b8;--paper-4:#dccaa2;--card-cur:#fff7e4;
   --line:#c9b48e;--line-2:#9a7b55;--line-soft:#ddcdaa;
-  --ink:#2b2118;--ink-2:#5c4b38;--ink-3:#8a7660;
+  --ink:#2b2118;--ink-2:#54442f;--ink-3:#72604b;
   --head:#6b2e17;--accent:#b2452c;--accent-2:#8f341f;--accent-ink:#fff8ec;--accent-soft:rgba(178,69,44,.12);
   --gold:#8a5a00;--ok:#3f6b33;--ok-ink:#fff;--ok-soft:rgba(63,107,51,.12);
   --ng:#a9442b;--ng-soft:rgba(169,68,43,.1);--info:#2f5d7c;
@@ -450,6 +450,8 @@ button{border-radius:4px}
 #hdr h1{color:var(--bar-ink);text-shadow:none;letter-spacing:.08em;font-weight:800}
 #hdr-info{color:#cdbb98}
 #hdr-info b,#hdr-info strong{color:#f3e7cc}
+/* 濃い色の机・ヘッダーの上では、紙用に暗くしたプレイヤー色を明るく戻す */
+#hdr-info>div:first-child{filter:brightness(1.75) saturate(.9)}
 /* 机（盤面の周り） */
 #mid{background:var(--wood);background-image:var(--wood-grain)}
 /* 開始前（入口・ロビー・設定画面）は、まだ中身のないゲーム用パネルを出さず机だけ見せる */
@@ -468,9 +470,13 @@ body:has(#net-ov:not(.hidden)) #hdr-info,body:has(#setup-ov:not(.hidden)) #hdr-i
 #log div{border-bottom:1px dotted var(--line)}
 /* プレイヤーカード */
 .pc{background:var(--paper-2);border:1px solid var(--line-2);border-left-width:5px;border-radius:4px;box-shadow:0 1px 0 rgba(0,0,0,.35)}
-.pc.cur{background:var(--card-cur);box-shadow:0 0 0 2px var(--accent),0 1px 0 rgba(0,0,0,.35)}
-.pc .pn{filter:brightness(.78) saturate(1.15)}
-.pc.bright{filter:none;box-shadow:0 0 0 2px var(--gold),0 1px 0 rgba(0,0,0,.35)}
+/* 手番（ダイスを振った人）= 朱の太枠＋「手番」札、特別建設の2番手 = 藍の太枠＋「2番手」札 */
+.pc.bright{filter:none;background:var(--card-cur);box-shadow:0 0 0 3px var(--accent),0 2px 8px rgba(0,0,0,.4)}
+.pc.cur:not(.bright){background:#eef2f2;box-shadow:0 0 0 3px var(--info),0 2px 8px rgba(0,0,0,.4)}
+.pc.bright::after,.pc.cur:not(.bright)::after{position:absolute;top:0;right:0;font-size:10.5px;font-weight:800;line-height:1.5;
+  padding:0 7px;border-radius:0 2px 0 4px;color:#fff;letter-spacing:.05em;pointer-events:none}
+.pc.bright::after{content:"手番";background:var(--accent)}
+.pc.cur:not(.bright)::after{content:"2番手";background:var(--info)}
 .pc .pai{background:var(--paper-4);color:var(--ink-2);border:1px solid var(--line-2);border-radius:3px}
 .pc .pieces{color:var(--ink-2)}
 .pc .pieces b{color:var(--ink)}
@@ -484,8 +490,14 @@ body:has(#net-ov:not(.hidden)) #hdr-info,body:has(#setup-ov:not(.hidden)) #hdr-i
 .pc.burst{border-left-color:var(--ng)!important}
 /* 資源などのチップ: 紙の上でも読めるよう落ち着いた色の札に */
 .chip{border-radius:3px}
-.rd{background:#3e5f75;color:#eef6fb}
-.rk{background:#6e4a7e;color:#f7ecfb}
+/* 資源の札: 濃い地に白文字で、どの資源も同じ読みやすさにする */
+.rw{background:#2f6a28;color:#fff}
+.rb{background:#9a3f26;color:#fff}
+.rs{background:#557f28;color:#fff}
+.rq{background:#96700a;color:#fff}
+.ro{background:#55587a;color:#fff}
+.rd{background:#3e5f75;color:#fff}
+.rk{background:#6e4a7e;color:#fff}
 /* モーダル */
 .ov{background:rgba(30,18,8,.55);backdrop-filter:none}
 .modal{background:var(--paper);border:1px solid var(--line-2);border-radius:4px;box-shadow:0 6px 24px rgba(0,0,0,.45)}
@@ -779,7 +791,7 @@ select,input[type=text],input[type=number]{background:var(--paper-2)!important;c
 <div class="ov hidden" id="discard-ov">
   <div class="modal">
     <h3>資源を捨てる</h3>
-    <p id="discard-msg" style="font-size:13px;margin-bottom:12px;color:#ffccaa"></p>
+    <p id="discard-msg" style="font-size:13px;margin-bottom:12px;color:var(--ng)"></p>
     <div id="discard-grid"></div>
     <div id="discard-counter" style="font-size:13px;color:var(--ink-2);margin:10px 0"></div>
     <div class="modal-btns"><button class="btn-d" onclick="confirmDiscard()">捨てる</button></div>
@@ -880,6 +892,7 @@ const TILE_DIST = {wood:6,brick:5,sheep:6,wheat:6,ore:5,desert:2};
 const NUM_TOKENS = [2,2,3,3,3,4,4,4,5,5,5,6,6,6,8,8,8,9,9,9,10,10,10,11,11,11,12,12];
 const PROB = {2:1,3:2,4:3,5:4,6:5,8:5,9:4,10:3,11:2,12:1};
 const PCOLORS = ['#f03525','#1db85e','#1a90e0','#ff9500','#9e30c8','#ff10a0'];
+const PCOLOR_INK={'#f03525':'#bd2a1c','#1db85e':'#137a3c','#1a90e0':'#1563a3','#ff9500':'#9a5200','#9e30c8':'#7a2299','#ff10a0':'#b80a72'};function inkOf(c){return PCOLOR_INK[c]||c;}const RES_CHIP={wood:'#2f6a28',brick:'#9a3f26',sheep:'#557f28',wheat:'#96700a',ore:'#55587a'};
 const PCOLOR_NAME = ['赤','緑','青','橙','紫','桃'];
 const COST = {road:{wood:1,brick:1},settlement:{wood:1,brick:1,sheep:1,wheat:1},city:{wheat:2,ore:3},devCard:{ore:1,sheep:1,wheat:1}};
 const COST_JP = {road:'木+煉',settlement:'木+煉+羊+麦',city:'麦×2+鉄×3',devCard:'鉄+羊+麦'};
@@ -1748,7 +1761,7 @@ function showDiceRollFx(d1,d2,total,spin){
     const nameFs=Math.min(21,Math.floor(180/Math.max(1,nameLen)));
     const sub=total===7
       ?'<div class="dfx-sub" style="color:var(--ng)">🏴 山賊発動！</div>'
-      :`<div class="dfx-sub" style="color:${p.color};font-size:${nameFs}px">${escapeHtml(p.name)}</div>`;
+      :`<div class="dfx-sub" style="color:${inkOf(p.color)};font-size:${nameFs}px">${escapeHtml(p.name)}</div>`;
     // 数字とプレイヤー名は半透明の枠で囲み、盤面の上でも読めるようにする
     el.querySelector('#dfx-res').innerHTML=
       `<div class="dfx-plate"><div class="dfx-num">${total}</div>${sub}</div>`;
@@ -1768,7 +1781,7 @@ function showDiceAnnounce(d1,d2,total,spin){
   const p=G.players[G.cur];
   const sub=total===7
     ?'<div style="font-size:20px;color:var(--ng);margin-top:6px;font-weight:700">🏴 山賊発動！</div>'
-    :`<div style="font-size:20px;color:${p.color};font-weight:800;margin-top:8px;letter-spacing:.5px;text-shadow:0 0 12px ${p.color}99">${p.name}</div>`;
+    :`<div style="font-size:20px;color:${inkOf(p.color)};font-weight:800;margin-top:8px;letter-spacing:.5px;text-shadow:0 0 12px ${p.color}99">${p.name}</div>`;
   el.innerHTML=
     '<div style="font-size:58px;letter-spacing:16px;line-height:1">'+diceFace(d1)+diceFace(d2)+'</div>'+
     '<div style="font-size:38px;font-weight:900;color:var(--accent);margin-top:2px">'+total+'</div>'+sub;
@@ -2042,7 +2055,7 @@ function showStealModal(candidates){
   for(const pid of candidates){
     const p=G.players[pid];
     const btn=document.createElement('button');btn.className='steal-btn';
-    btn.innerHTML=`<span style="color:${p.color}">■</span> ${p.name} <span style="color:var(--ink-2)">(${sum(p.resources)}枚)</span>`;
+    btn.innerHTML=`<span style="color:${inkOf(p.color)}">■</span> ${p.name} <span style="color:var(--ink-2)">(${sum(p.resources)}枚)</span>`;
     btn.onclick=()=>{stealFrom(pid);closeModal('steal-ov')};
     list.appendChild(btn);
   }
@@ -2093,9 +2106,9 @@ function showStealNotice(thief,victim,res){
   const humanP=NET.on?G.players[NET.myPid]:G.players.find(p=>!p.isAI);
   const iMySteal=humanP&&thief.id===humanP.id;
   const iGotRobbed=humanP&&victim.id===humanP.id;
-  const bgColor=iMySteal?'rgba(0,80,20,.97)':'rgba(90,0,0,.97)';
-  const borderColor=iMySteal?'#44ff88':'#ff5555';
-  const glowColor=iMySteal?'rgba(50,255,100,.5)':'rgba(255,50,50,.6)';
+  const bgColor=iMySteal?'var(--paper)':'var(--paper)';
+  const borderColor=iMySteal?'var(--ok)':'var(--ng)';
+  const glowColor=iMySteal?'rgba(0,0,0,.2)':'rgba(0,0,0,.2)';
   const headline=iMySteal?'奪いました！':'盗まれた！';
   const headlineColor=iMySteal?'var(--ok)':'var(--ng)';
   el.style.cssText=`position:fixed;top:50%;right:225px;transform:translateY(-50%);z-index:9990;text-align:center;`+
@@ -2104,9 +2117,9 @@ function showStealNotice(thief,victim,res){
   el.innerHTML=
     `<div style="font-size:48px;line-height:1">${RES_EMOJI[res]}</div>`+
     `<div style="font-size:20px;font-weight:900;color:${headlineColor};margin:6px 0">${headline}</div>`+
-    `<div style="font-size:13px;color:#ffeecc;line-height:1.8">`+
-      `<b style="color:${thief.color}">${thief.name}</b> が<br>`+
-      `<b style="color:${victim.color}">${victim.name}</b> から<br>`+
+    `<div style="font-size:13px;color:var(--ink);line-height:1.8">`+
+      `<b style="color:${inkOf(thief.color)}">${thief.name}</b> が<br>`+
+      `<b style="color:${inkOf(victim.color)}">${victim.name}</b> から<br>`+
       `<b style="font-size:16px">${RES_EMOJI[res]} ${RES_JP[res]}</b> を奪った`+
     `</div>`;
   document.body.appendChild(el);
@@ -2225,8 +2238,8 @@ function showDevCardUsePopup(player,cardType){
   div.style.cssText=`position:fixed;left:50%;transform:translateX(-50%);z-index:9999;`+
     `background:var(--paper-3);border:2px solid ${player.color};border-radius:12px;padding:14px 28px;`+
     `text-align:center;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.7);white-space:nowrap`;
-  div.innerHTML=`<div style="color:${player.color};font-weight:700;font-size:16px">${player.isAI?'<span class="cpu-tag">CPU</span>':''} ${player.name}</div>`+
-    `<div style="color:#fff;font-size:14px;margin-top:4px">「${name}」を使用！</div>`;
+  div.innerHTML=`<div style="color:${inkOf(player.color)};font-weight:700;font-size:16px">${player.isAI?'<span class="cpu-tag">CPU</span>':''} ${player.name}</div>`+
+    `<div style="color:var(--ink);font-size:14px;margin-top:4px">「${name}」を使用！</div>`;
   document.body.appendChild(div);
   stackPopup(div,90);
   G._popupCount=(G._popupCount||0)+1;
@@ -2286,7 +2299,7 @@ function _renderYopSelect(){
   }).join('');
   const selHtml=pending.length?`<div style="margin:10px 0;padding:8px 12px;background:var(--line-soft);border-radius:8px;font-size:14px">
     選択中: ${pending.map(r=>`${RES_EMOJI[r]} ${RES_JP[r]}`).join(' ＋ ')}
-    <button style="margin-left:10px;font-size:11px;padding:2px 8px;background:#3a1010;color:#ffaaaa;border:1px solid var(--ng);border-radius:4px;cursor:pointer" onclick="G._yopPending=[];_renderYopSelect()">リセット</button>
+    <button style="margin-left:10px;font-size:11px;padding:2px 8px;background:var(--paper-3);color:var(--ng);border:1px solid var(--ng);border-radius:4px;cursor:pointer" onclick="G._yopPending=[];_renderYopSelect()">リセット</button>
   </div>`:'';
   document.getElementById('yop-modal-body').innerHTML=
     `<h3>👀 発見 — 資源を2枚受け取る</h3>`+
@@ -2312,7 +2325,7 @@ function _renderYopConfirm(){
     `<h3>👀 発見 — 確認</h3>`+
     buildMyResHtml(G.cur)+
     `<p style="font-size:13px;color:var(--ink-2);margin:10px 0 12px">以下の資源を受け取ります。よろしいですか？</p>`+
-    `<div style="text-align:center;font-size:18px;font-weight:700;color:#fff;padding:14px;background:var(--line-soft);border-radius:10px;margin:10px 0">${summary}</div>`+
+    `<div style="text-align:center;font-size:18px;font-weight:700;color:var(--ink);padding:14px;background:var(--line-soft);border-radius:10px;margin:10px 0">${summary}</div>`+
     `<div class="modal-btns">`+
       `<button class="btn-s" onclick="_renderYopSelect()">◀ 戻る</button>`+
       `<button class="btn-g" onclick="yopConfirm()" style="font-weight:700">確定する</button>`+
@@ -2351,7 +2364,7 @@ function monoSelect(r){
     `<h3>👑 独占 — 確認</h3>`+
     `<p style="font-size:13px;color:var(--ink);margin-bottom:10px">以下の資源を独占します。よろしいですか？</p>`+
     `<div style="text-align:center;padding:14px;background:var(--line-soft);border-radius:10px;margin:10px 0">`+
-      `<div style="font-size:20px;font-weight:700;color:#fff">${RES_EMOJI[r]} ${RES_JP[r]}</div>`+
+      `<div style="font-size:20px;font-weight:700;color:var(--ink)">${RES_EMOJI[r]} ${RES_JP[r]}</div>`+
       gainHtml+
     `</div>`+
     `<div class="modal-btns">`+
@@ -2415,7 +2428,7 @@ function showCardEffectPopup(name,color,card,data){
   let title,body;
   if(card==='monopoly'){
     const amtHtml=(bankViewMode()==='num'&&d.total!=null)?` <span style="color:var(--gold)">×${d.total}枚</span>`:'';
-    title='<span style="color:#ffcc55">👑 独占</span>';
+    title='<span style="color:var(--gold)">👑 独占</span>';
     body=`<b style="font-size:19px">${RES_EMOJI[d.res]} ${RES_JP[d.res]}</b>${amtHtml} を独占！`;
   } else {
     const list=(d.res||[]);
@@ -2432,8 +2445,8 @@ function showCardEffectPopup(name,color,card,data){
     `background:var(--paper);border:3px solid ${color||'var(--accent)'};border-radius:16px;padding:14px 30px;`+
     'text-align:center;pointer-events:none;box-shadow:0 6px 34px rgba(0,0,0,.8);white-space:nowrap';
   el.innerHTML=`<div style="font-size:15px;font-weight:800;margin-bottom:5px">${title}</div>`+
-    `<div style="color:${color};font-weight:800;font-size:15px">${name}</div>`+
-    `<div style="color:#fff;font-size:15px;margin-top:5px">${body}</div>`;
+    `<div style="color:${inkOf(color)};font-weight:800;font-size:15px">${name}</div>`+
+    `<div style="color:var(--ink);font-size:15px;margin-top:5px">${body}</div>`;
   document.body.appendChild(el);
   stackPopup(el,90);
   G._popupCount=(G._popupCount||0)+1;
@@ -2442,11 +2455,11 @@ function showCardEffectPopup(name,color,card,data){
 function showMonoHit(r,amt,byName,color){
   const div=document.createElement('div');
   div.style.cssText=`position:fixed;left:50%;transform:translateX(-50%);z-index:9999;`+
-    `background:#3a0808;border:2px solid ${color||'var(--accent)'};border-radius:12px;padding:14px 28px;`+
+    `background:var(--paper);border:2px solid ${color||'var(--accent)'};border-radius:12px;padding:14px 28px;`+
     `text-align:center;pointer-events:none;box-shadow:0 4px 24px rgba(0,0,0,.8);white-space:nowrap`;
-  div.innerHTML=`<div style="color:#ff6666;font-weight:700;font-size:15px">👑 独占された！</div>`+
-    `<div style="color:#fff;font-size:14px;margin-top:5px">${RES_EMOJI[r]} <b>${RES_JP[r]}</b> × <b>${amt}</b>枚 盗まれた</div>`+
-    `<div style="color:#aaa;font-size:11px;margin-top:3px">by ${byName}</div>`;
+  div.innerHTML=`<div style="color:var(--ng);font-weight:700;font-size:15px">👑 独占された！</div>`+
+    `<div style="color:var(--ink);font-size:14px;margin-top:5px">${RES_EMOJI[r]} <b>${RES_JP[r]}</b> × <b>${amt}</b>枚 盗まれた</div>`+
+    `<div style="color:var(--ink-3);font-size:11px;margin-top:3px">by ${byName}</div>`;
   document.body.appendChild(div);
   stackPopup(div,90);
   G._popupCount=(G._popupCount||0)+1;
@@ -2699,23 +2712,23 @@ function buildDiceChartHtml(dLog){
     const aH=Math.max(3,Math.round(actual/maxVal*barMaxH));
     const eH=Math.max(2,Math.round(expected/maxVal*barMaxH));
     const is7=n===7;
-    const barCol=is7?'#e05555':'var(--info)';
+    const barCol=is7?'var(--ng)':'var(--info)';
     const pct=total>0?Math.round(actual/total*100):0;
     html+=
       `<div style="flex:1;display:flex;flex-direction:column;align-items:center;min-width:0">` +
         `<div style="font-size:12px;color:var(--ink);margin-bottom:3px;font-weight:700">${actual}</div>`+
         `<div style="position:relative;width:100%;height:${barMaxH}px;display:flex;align-items:flex-end;justify-content:center">` +
-          `<div style="position:absolute;bottom:0;left:10%;width:80%;height:${eH}px;background:rgba(255,255,255,.18);border-radius:2px 2px 0 0"></div>`+
+          `<div style="position:absolute;bottom:0;left:10%;width:80%;height:${eH}px;background:rgba(0,0,0,.14);border-radius:2px 2px 0 0"></div>`+
           `<div style="position:relative;width:72%;height:${aH}px;background:${barCol};border-radius:3px 3px 0 0;box-shadow:0 0 8px ${barCol}66"></div>`+
         `</div>`+
-        `<div style="font-size:13px;color:${is7?'#e05555':'#a0c0e0'};font-weight:700;margin-top:3px">${n}</div>`+
+        `<div style="font-size:13px;color:${is7?'var(--ng)':'var(--ink-2)'};font-weight:700;margin-top:3px">${n}</div>`+
         `<div style="font-size:10px;color:var(--ink-3)">${pct}%</div>`+
       `</div>`;
   }
   html+=`</div>`;
   html+=`<div style="display:flex;gap:14px;justify-content:flex-end;margin-top:6px;font-size:11px;color:var(--ink-3)">` +
     `<span><span style="display:inline-block;width:12px;height:10px;background:var(--info);border-radius:1px;vertical-align:middle;margin-right:3px"></span>実績</span>`+
-    `<span><span style="display:inline-block;width:12px;height:10px;background:rgba(255,255,255,.18);border-radius:1px;vertical-align:middle;margin-right:3px"></span>期待値</span>`+
+    `<span><span style="display:inline-block;width:12px;height:10px;background:rgba(0,0,0,.14);border-radius:1px;vertical-align:middle;margin-right:3px"></span>期待値</span>`+
   `</div>`;
   return html;
 }
@@ -2748,7 +2761,7 @@ function renderWinBanner(p){
         `border:1px solid ${isWinner?'rgba(244,164,96,.4)':'var(--line-soft)'}">` +
         `<span style="font-size:20px;min-width:28px">${medal}</span>`+
         `<span style="width:10px;height:10px;border-radius:50%;background:${pl.color};flex-shrink:0;box-shadow:0 0 6px ${pl.color}88"></span>`+
-        `<span style="font-weight:700;color:${pl.color};flex:1;font-size:14px">${pl.isAI?'<span class="cpu-tag">CPU</span>':''} ${pl.name}${badges}</span>`+
+        `<span style="font-weight:700;color:${inkOf(pl.color)};flex:1;font-size:14px">${pl.isAI?'<span class="cpu-tag">CPU</span>':''} ${pl.name}${badges}</span>`+
         `<span style="font-size:13px;color:var(--ink)">🏠${5-pl.settlements} 🏙${4-pl.cities} ⚔️${pl.knights} 🛤${roadLen}</span>`+
         `<span style="font-size:18px;font-weight:900;color:${isWinner?'var(--gold)':'var(--ink-2)'};min-width:36px;text-align:right">⭐${totalVP}</span>`+
         `</div>`;
@@ -2820,7 +2833,7 @@ function buildWinStatsHtml(){
     RES.map((r,i)=>`<th${i===0?' class="sep"':''} title="${RES_JP[r]}">${RES_EMOJI[r]}</th>`).join('')+'<th>計</th>'+
     OTHER.map(([,l],i)=>`<th${i===0?' class="sep"':''}>${l}</th>`).join('')+'<th class="sep">合計</th></tr>';
   for(const x of rows){
-    tbl+=`<tr><td class="nm" style="color:${x.p.color}" title="${escapeHtml(x.p.name)}">${escapeHtml(x.p.name)}</td>`+
+    tbl+=`<tr><td class="nm" style="color:${inkOf(x.p.color)}" title="${escapeHtml(x.p.name)}">${escapeHtml(x.p.name)}</td>`+
       x.d.map((n,i)=>cell(n,i,i===0?'sep':'')).join('')+cell(x.dSum,5,'sub')+
       x.o.map((n,i)=>cell(n,6+i,i===0?'sep':'')).join('')+cell(x.total,12,'tot sep')+'</tr>';
   }
@@ -2843,7 +2856,7 @@ function buildWinStatsHtml(){
     '<th class="sep">💥 7で捨てた</th><th title="自分で7を出して捨てた枚数（7で捨てたの内数）">└ うち自爆</th>'+
     '<th>⚔️ 盗まれた</th><th>👑 独占された</th><th>計</th></tr>';
   for(const x of lrows){
-    ltbl+=`<tr><td class="nm" style="color:${x.p.color}" title="${escapeHtml(x.p.name)}">${escapeHtml(x.p.name)}</td>`+
+    ltbl+=`<tr><td class="nm" style="color:${inkOf(x.p.color)}" title="${escapeHtml(x.p.name)}">${escapeHtml(x.p.name)}</td>`+
       lcell(x.blocked,0,'sep')+lcell(x.l[0],1,'sep')+lcell(x.self,5,'selfc')+
       lcell(x.l[1],2)+lcell(x.l[2],3)+lcell(x.lSum,4,'sub')+'</tr>';
   }
@@ -3006,7 +3019,7 @@ function tradeViewHtml(trade){
   const myGet=iAmProposer?trade.want:trade.give;
   const head=iAmProposer
     ?'<span class="tv-who">あなたの提案</span>'
-    :`<strong style="color:${proposer.color}">${proposer.isAI?'<span class="cpu-tag">CPU</span>':''} ${escapeHtml(proposer.name)}</strong> `+
+    :`<strong style="color:${inkOf(proposer.color)}">${proposer.isAI?'<span class="cpu-tag">CPU</span>':''} ${escapeHtml(proposer.name)}</strong> `+
      `<span class="tv-vp">⭐${shownVP(proposer)}</span> からの提案<span class="tv-note">（承諾した場合）</span>`;
   return `<div class="tv-head">${head}</div><div class="tv-flow">`+
     `<div class="tv-box give"><div class="tv-lab">あなたが渡す</div><div class="tv-chips">${resEntriesToChips(myGive)}</div></div>`+
@@ -3053,7 +3066,7 @@ function showUnifiedReactModal(){
     const row=document.createElement('div');
     row.id=`react-row-${op.id}`;
     row.style.cssText=`display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--paper-3)`;
-    const nameSpan=`<span style="color:${op.color};flex:1;font-weight:700">${op.isAI?'<span class="cpu-tag">CPU</span>':''} ${op.name} <span style="color:var(--gold);font-size:11px;font-weight:400">⭐${vp}</span></span>`;
+    const nameSpan=`<span style="color:${inkOf(op.color)};flex:1;font-weight:700">${op.isAI?'<span class="cpu-tag">CPU</span>':''} ${op.name} <span style="color:var(--gold);font-size:11px;font-weight:400">⭐${vp}</span></span>`;
     const alreadyAnswered=pendingTrade.reactions.hasOwnProperty(op.id);
     if(op.isAI||alreadyAnswered){
       // AI or pre-answered → scrollable list
@@ -3102,7 +3115,7 @@ function humanReactUnified(pid,yes){
   if(row){
     row.style.border=`1px solid ${yes?'var(--ok)':'var(--ng)'}`;
     row.style.background=yes?'var(--ok-soft)':'var(--ng-soft)';
-    row.innerHTML=`<span style="color:${op.color};flex:1;font-weight:700">${op.name} <span style="color:var(--gold);font-size:11px;font-weight:400">⭐${vp}</span></span>`+
+    row.innerHTML=`<span style="color:${inkOf(op.color)};flex:1;font-weight:700">${op.name} <span style="color:var(--gold);font-size:11px;font-weight:400">⭐${vp}</span></span>`+
       `<span style="font-size:20px">${yes?'⭕':'❌'}</span>`+
       `<button class="btn-s" style="font-size:12px;padding:4px 10px;margin-left:8px" onclick="humanReactRedo(${pid})">やり直し</button>`;
   }
@@ -3123,7 +3136,7 @@ function humanReactRedo(pid){
   const ca=Object.entries(pendingTrade.want).every(([r,n])=>op.resources[r]>=n);
   const row=document.getElementById(`react-row-${pid}`);
   if(row){
-    const nameSpan=`<span style="color:${op.color};flex:1;font-weight:700">${op.name} <span style="color:var(--gold);font-size:11px;font-weight:400">⭐${vp}</span></span>`;
+    const nameSpan=`<span style="color:${inkOf(op.color)};flex:1;font-weight:700">${op.name} <span style="color:var(--gold);font-size:11px;font-weight:400">⭐${vp}</span></span>`;
     row.style.border='2px solid var(--info)';
     row.style.background='var(--paper-3)';
     row.innerHTML=nameSpan+
@@ -3165,7 +3178,7 @@ function showTradeReactionResults(){
     row.style.cssText=`display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;margin-bottom:5px;`+
       `background:${yes?'var(--ok-soft)':'var(--ng-soft)'};border:1px solid ${yes?'var(--ok)':'var(--ng)'}`;
     const vp2=shownVP(op);
-    row.innerHTML=`<span style="color:${op.color};flex:1">${op.isAI?'<span class="cpu-tag">CPU</span>':''} ${op.name}</span>`+
+    row.innerHTML=`<span style="color:${inkOf(op.color)};flex:1">${op.isAI?'<span class="cpu-tag">CPU</span>':''} ${op.name}</span>`+
       `<span style="color:var(--gold);font-size:11px;margin-right:6px">⭐${vp2}</span>`+
       `<span style="font-size:22px;font-weight:900;line-height:1">${yes?'⭕':'❌'}</span>`;
     reactDiv.appendChild(row);
@@ -3175,7 +3188,7 @@ function showTradeReactionResults(){
       const btn=document.createElement('button');
       btn.className='btn-g';
       btn.style.cssText=`border-left:4px solid ${op.color};width:100%;text-align:left;padding:8px 12px`;
-      btn.innerHTML=`<strong style="color:${op.color}">${op.name}</strong> と取引する`;
+      btn.innerHTML=`<strong style="color:${inkOf(op.color)}">${op.name}</strong> と取引する`;
       btn.onclick=()=>completeTrade(op.id);
       acceptBtns.appendChild(btn);
     }
@@ -3261,11 +3274,11 @@ function showTradeCompletePopup(p1,p2,give,want){
   el.id='trade-complete-pop';
   el.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.8);z-index:9999;background:linear-gradient(135deg,var(--paper-2),var(--line));border:3px solid #3a7abf;border-radius:18px;padding:24px 34px;text-align:center;box-shadow:0 10px 50px #000c,0 0 30px #1a4a8a66;min-width:320px;max-width:480px;opacity:0;transition:opacity .3s,transform .3s';
   el.innerHTML=
-    '<div style="font-size:28px;font-weight:900;color:#f4d03f;margin-bottom:14px">交換成立！</div>'+
+    '<div style="font-size:28px;font-weight:900;color:var(--gold);margin-bottom:14px">交換成立！</div>'+
     `<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px">`+
-      `<span style="font-weight:900;font-size:18px;color:${p1.color}">${p1.name}</span>`+
+      `<span style="font-weight:900;font-size:18px;color:${inkOf(p1.color)}">${p1.name}</span>`+
       `<span style="color:var(--ink-2);font-size:16px">⇄</span>`+
-      `<span style="font-weight:900;font-size:18px;color:${p2.color}">${p2.name}</span>`+
+      `<span style="font-weight:900;font-size:18px;color:${inkOf(p2.color)}">${p2.name}</span>`+
     `</div>`+
     `<div style="display:flex;align-items:flex-start;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:8px">`+
       `<div style="text-align:center"><div style="font-size:13px;color:var(--ink-2);margin-bottom:6px;font-weight:700">${p1.name} が渡す</div><div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center">${resEntriesToChips(give)}</div></div>`+
@@ -3335,11 +3348,11 @@ function showDevCardReveal(card){
   if(!info)return;
   const el=document.createElement('div');
   el.id='devcard-reveal-el';
-  el.style.cssText='position:fixed;top:50%;left:50%;transform:translateX(-50%) translateY(-50%) scale(1);z-index:450;text-align:center;background:var(--paper);border:3px solid #9a4fdc;border-radius:20px;padding:22px 40px;pointer-events:none;box-shadow:0 0 60px rgba(154,79,220,.45),0 8px 40px rgba(0,0,0,.7)';
-  el.innerHTML=`<div style="font-size:13px;color:#c890ff;letter-spacing:1px;margin-bottom:8px">発展カードを取得！</div>`+
+  el.style.cssText='position:fixed;top:50%;left:50%;transform:translateX(-50%) translateY(-50%) scale(1);z-index:450;text-align:center;background:var(--paper);border:3px solid #9a4fdc;border-radius:20px;padding:22px 40px;pointer-events:none;box-shadow:0 0 60px rgba(0,0,0,.2),0 8px 40px rgba(0,0,0,.7)';
+  el.innerHTML=`<div style="font-size:13px;color:#6e4a7e;letter-spacing:1px;margin-bottom:8px">発展カードを取得！</div>`+
     `<div style="font-size:38px;line-height:1.2">${info.jp.split(' ')[0]}</div>`+
-    `<div style="font-size:22px;font-weight:900;color:#e8b0ff;margin:8px 0">${info.jp}</div>`+
-    `<div style="font-size:12px;color:#9aaecc;max-width:220px">${info.desc}</div>`;
+    `<div style="font-size:22px;font-weight:900;color:#6e4a7e;margin:8px 0">${info.jp}</div>`+
+    `<div style="font-size:12px;color:var(--ink-2);max-width:220px">${info.desc}</div>`;
   el.style.animation='dicePopIn .28s ease-out forwards';
   document.body.appendChild(el);
   setTimeout(()=>{
@@ -4325,7 +4338,7 @@ function closeTradeFlag(){
 function closePtradeProposal(){G._tradeOpen=false;stopTradeTimer();closeModal('ptrade-ov');pendingTrade=null;}
 function resEntriesToChips(entries){
   const chips=Object.entries(entries).filter(([,n])=>n>0)
-    .map(([r,n])=>`<span style="display:inline-flex;align-items:center;gap:3px;background:${RES_COLOR[r]};color:#fff;border-radius:5px;padding:3px 8px;font-size:13px;font-weight:700">${RES_EMOJI[r]} ${RES_JP[r]} <strong style="font-size:15px">×${n}</strong></span>`)
+    .map(([r,n])=>`<span style="display:inline-flex;align-items:center;gap:3px;background:${RES_CHIP[r]||RES_COLOR[r]};color:#fff;border-radius:5px;padding:3px 8px;font-size:13px;font-weight:700">${RES_EMOJI[r]} ${RES_JP[r]} <strong style="font-size:15px">×${n}</strong></span>`)
     .join(' ');
   return chips||'<span style="color:var(--ink-2);font-size:12px">なし</span>';
 }
@@ -4346,7 +4359,7 @@ function renderTurnOrder(elId){
     const meMark=isMe(p.id)?'★':'';
     h+=`<span class="turn-chip${isSecond?' now':''}">`+
       `<span class="tc-n">${isSecond?'2番手':i}</span>`+
-      `<span style="color:${p.color};font-weight:700">${escapeHtml(p.name)}${meMark}</span>`+
+      `<span style="color:${inkOf(p.color)};font-weight:700">${escapeHtml(p.name)}${meMark}</span>`+
       `<span style="color:var(--gold);font-size:10px">⭐${shownVP(p)}</span></span>`;
   }
   el.innerHTML=h;
@@ -4354,7 +4367,7 @@ function renderTurnOrder(elId){
 function buildMyResHtml(pid){
   const p=G.players[pid];if(!p)return '';
   const chips=RES.filter(r=>p.resources[r]>0)
-    .map(r=>`<span style="display:inline-flex;align-items:center;gap:3px;background:${RES_COLOR[r]};color:#fff;border-radius:5px;padding:3px 8px;font-size:13px;font-weight:700">${RES_EMOJI[r]} ${RES_JP[r]} <strong style="font-size:15px">×${p.resources[r]}</strong></span>`)
+    .map(r=>`<span style="display:inline-flex;align-items:center;gap:3px;background:${RES_CHIP[r]||RES_COLOR[r]};color:#fff;border-radius:5px;padding:3px 8px;font-size:13px;font-weight:700">${RES_EMOJI[r]} ${RES_JP[r]} <strong style="font-size:15px">×${p.resources[r]}</strong></span>`)
     .join('');
   return `<div style="font-size:11px;color:var(--accent);font-weight:700;margin-bottom:4px">自分の手札 (${p.name})</div>`+
     `<div style="display:flex;flex-wrap:wrap;gap:4px">${chips||'<span style="color:var(--ink-2);font-size:12px">資源なし</span>'}</div>`;
@@ -4366,7 +4379,7 @@ function updateUI(){
   document.getElementById('deck-count').textContent=`残り ${G.devDeck.length} 枚`;
   const p=G.players[G.cur];
   document.getElementById('hdr-info').innerHTML=
-    `<div style="color:${p.color};font-weight:700">${p.isAI?'':''}${p.name} のターン</div>
+    `<div style="color:${inkOf(p.color)};font-weight:700">${p.isAI?'':''}${p.name} のターン</div>
      <div>${phaseJP()}</div>`;
 }
 
@@ -4428,7 +4441,7 @@ function makePlayerCard(p){
       // 1行目: 目印 → 名前 → すぐ右に勝利点
       '<div class="prow1">'+
         mark+
-        '<span class="pn" style="color:'+p.color+'" title="'+escapeHtml(p.name)+'">'+escapeHtml(shortName)+'</span>'+
+        '<span class="pn" style="color:'+inkOf(p.color)+'" title="'+escapeHtml(p.name)+'">'+escapeHtml(shortName)+'</span>'+
         '<span class="pvp">⭐'+totalVP+'</span>'+
       '</div>'+
       // 名前と資源の間: 残りのコマ数
@@ -4662,7 +4675,7 @@ function updateActionButtons(){
   if(NET.on?(G.cur!==NET.myPid||isAI(G.cur)):isAI(G.cur)){
     btns.innerHTML=isAI(G.cur)
       ?(NET.on&&G.cur===NET.myPid
-        ?'<span style="color:#c8a060;font-size:12px;font-style:italic">ホストの設定でCPUが代行中...</span>'
+        ?'<span style="color:var(--gold);font-size:12px;font-style:italic">ホストの設定でCPUが代行中...</span>'
         :'<span style="color:var(--ink-3);font-size:12px;font-style:italic">AIターン中...</span>')
       :`<span style="color:var(--ink-3);font-size:12px;font-style:italic">${G.players[G.cur].name} のターン...</span>`;
     return;
@@ -4684,7 +4697,7 @@ function updateActionButtons(){
     if(hasPlayable&&!G.devPlayedThisTurn)add('🃏 カード使用（ロール前）','btn-g',()=>{G._preRollPlay=true;showDevCards();});
   } else if(ph==='robber'){
     const b=document.createElement('div');
-    b.style.cssText='color:var(--ng);font-size:12px;text-align:center;padding:6px 4px;background:#2a0808;border-radius:7px;border:1px solid var(--ng);line-height:1.5';
+    b.style.cssText='color:var(--ng);font-size:12px;text-align:center;padding:6px 4px;background:var(--ng-soft);border-radius:7px;border:1px solid var(--ng);line-height:1.5';
     b.innerHTML='🏴 山賊を移動<br><span style="font-size:10px;color:#cc7777">盤面のタイルをクリック</span>';
     btns.appendChild(b);
   } else if(ph==='main-action'){
@@ -5237,7 +5250,7 @@ function netRenderReact(trade,secs){
     const answered=trade.reactions.hasOwnProperty(op.id);
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--paper-3)';
-    const nameSpan=`<span style="color:${op.color};flex:1;font-weight:700">${op.isAI?'<span class="cpu-tag">CPU</span>':''} ${op.name} <span style="color:var(--gold);font-size:11px;font-weight:400">⭐${vp}</span></span>`;
+    const nameSpan=`<span style="color:${inkOf(op.color)};flex:1;font-weight:700">${op.isAI?'<span class="cpu-tag">CPU</span>':''} ${op.name} <span style="color:var(--gold);font-size:11px;font-weight:400">⭐${vp}</span></span>`;
     if(op.id===NET.myPid&&!answered){
       const ca=Object.entries(trade.want).every(([r,n])=>op.resources[r]>=n);
       row.style.border='2px solid var(--info)';
@@ -5296,7 +5309,7 @@ function netRenderResult(trade,secs){
     row.style.cssText=`display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;margin-bottom:5px;`+
       `background:${yes?'var(--ok-soft)':'var(--ng-soft)'};border:1px solid ${yes?'var(--ok)':'var(--ng)'}`;
     const vp2=shownVP(op);
-    row.innerHTML=`<span style="color:${op.color};flex:1">${op.isAI?'<span class="cpu-tag">CPU</span>':''} ${op.name}</span>`+
+    row.innerHTML=`<span style="color:${inkOf(op.color)};flex:1">${op.isAI?'<span class="cpu-tag">CPU</span>':''} ${op.name}</span>`+
       `<span style="color:var(--gold);font-size:11px;margin-right:6px">⭐${vp2}</span>`+
       `<span style="font-size:22px;font-weight:900;line-height:1">${yes?'⭕':'❌'}</span>`;
     reactDiv.appendChild(row);
@@ -5304,7 +5317,7 @@ function netRenderResult(trade,secs){
       const btn=document.createElement('button');
       btn.className='btn-g';
       btn.style.cssText=`border-left:4px solid ${op.color};width:100%;text-align:left;padding:8px 12px`;
-      btn.innerHTML=`<strong style="color:${op.color}">${op.name}</strong> と取引する`;
+      btn.innerHTML=`<strong style="color:${inkOf(op.color)}">${op.name}</strong> と取引する`;
       btn.onclick=()=>netAcceptTrade(op.id);
       acceptBtns.appendChild(btn);
     }
@@ -5616,7 +5629,7 @@ function netRenderLobby(names,isHost,code,colors,you){
       }).join('')+'</span>';
     }
     return `<div class="setup-row" style="margin-bottom:6px"><div class="swatch" style="background:${PCOLORS[ci]||'#888'}"></div>`+
-      `<span style="font-size:14px;font-weight:700;flex:1;color:${PCOLORS[ci]||'var(--ink)'}">${escapeHtml(n)}${i===you?' <small style="color:var(--ink-2)">(あなた)</small>':''}</span>`+picker+
+      `<span style="font-size:14px;font-weight:700;flex:1;color:${inkOf(PCOLORS[ci])||'var(--ink)'}">${escapeHtml(n)}${i===you?' <small style="color:var(--ink-2)">(あなた)</small>':''}</span>`+picker+
       `<span style="font-size:11px;color:var(--ink-2)">${i===0?'👑 ホスト':'ゲスト'}</span></div>`;
   }).join('')+
   '<div style="font-size:11px;color:var(--ink-2);margin-top:2px">自分の行の色をクリックすると変更できます</div>';
@@ -5880,7 +5893,7 @@ function _renderHostPausePanel(){
     const state=online?(p.isAI?'<span class="pz-st warn">接続中（CPU代行）</span>':'<span class="pz-st ok">接続中</span>')
                       :'<span class="pz-st ng">切断中（CPU代行）</span>';
     const seg=(on,label,fn,title)=>`<button class="pz-seg${on?' on':''}" onclick="${fn}" title="${title}">${label}</button>`;
-    h+=`<tr><td class="pz-nm" style="color:${p.color}">${escapeHtml(p.name)}</td><td>${state}</td>`+
+    h+=`<tr><td class="pz-nm" style="color:${inkOf(p.color)}">${escapeHtml(p.name)}</td><td>${state}</td>`+
       `<td>${seg(!cpu,'本人',`hostSetSeatMode(${pid},'human')`,online?'本人が操作します':'再接続したら本人に戻します')}`+
       `${seg(cpu,'CPU',`hostSetSeatMode(${pid},'cpu')`,'CPUが代わりに操作します（本人は観戦）')}</td>`+
       `<td>${seg(allow,'許可',`hostSetRejoin(${pid},true)`,'切断しても同じ名前で入り直せば戻れます')}`+

@@ -4,7 +4,7 @@
   --wood:#4b3524;--bar:#2e2016;--bar-ink:#f3e7cc;
   --paper:#efe4cc;--paper-2:#f6eedb;--paper-3:#e6d8b8;--paper-4:#dccaa2;--card-cur:#fff7e4;
   --line:#c9b48e;--line-2:#9a7b55;--line-soft:#ddcdaa;
-  --ink:#2b2118;--ink-2:#5c4b38;--ink-3:#8a7660;
+  --ink:#2b2118;--ink-2:#54442f;--ink-3:#72604b;
   --head:#6b2e17;--accent:#b2452c;--accent-2:#8f341f;--accent-ink:#fff8ec;--accent-soft:rgba(178,69,44,.12);
   --gold:#8a5a00;--ok:#3f6b33;--ok-ink:#fff;--ok-soft:rgba(63,107,51,.12);
   --ng:#a9442b;--ng-soft:rgba(169,68,43,.1);--info:#2f5d7c;
@@ -34,6 +34,8 @@ button{border-radius:4px}
 #hdr h1{color:var(--bar-ink);text-shadow:none;letter-spacing:.08em;font-weight:800}
 #hdr-info{color:#cdbb98}
 #hdr-info b,#hdr-info strong{color:#f3e7cc}
+/* 濃い色の机・ヘッダーの上では、紙用に暗くしたプレイヤー色を明るく戻す */
+#hdr-info>div:first-child{filter:brightness(1.75) saturate(.9)}
 /* 机（盤面の周り） */
 #mid{background:var(--wood);background-image:var(--wood-grain)}
 /* 開始前（入口・ロビー・設定画面）は、まだ中身のないゲーム用パネルを出さず机だけ見せる */
@@ -52,9 +54,13 @@ body:has(#net-ov:not(.hidden)) #hdr-info,body:has(#setup-ov:not(.hidden)) #hdr-i
 #log div{border-bottom:1px dotted var(--line)}
 /* プレイヤーカード */
 .pc{background:var(--paper-2);border:1px solid var(--line-2);border-left-width:5px;border-radius:4px;box-shadow:0 1px 0 rgba(0,0,0,.35)}
-.pc.cur{background:var(--card-cur);box-shadow:0 0 0 2px var(--accent),0 1px 0 rgba(0,0,0,.35)}
-.pc .pn{filter:brightness(.78) saturate(1.15)}
-.pc.bright{filter:none;box-shadow:0 0 0 2px var(--gold),0 1px 0 rgba(0,0,0,.35)}
+/* 手番（ダイスを振った人）= 朱の太枠＋「手番」札、特別建設の2番手 = 藍の太枠＋「2番手」札 */
+.pc.bright{filter:none;background:var(--card-cur);box-shadow:0 0 0 3px var(--accent),0 2px 8px rgba(0,0,0,.4)}
+.pc.cur:not(.bright){background:#eef2f2;box-shadow:0 0 0 3px var(--info),0 2px 8px rgba(0,0,0,.4)}
+.pc.bright::after,.pc.cur:not(.bright)::after{position:absolute;top:0;right:0;font-size:10.5px;font-weight:800;line-height:1.5;
+  padding:0 7px;border-radius:0 2px 0 4px;color:#fff;letter-spacing:.05em;pointer-events:none}
+.pc.bright::after{content:"手番";background:var(--accent)}
+.pc.cur:not(.bright)::after{content:"2番手";background:var(--info)}
 .pc .pai{background:var(--paper-4);color:var(--ink-2);border:1px solid var(--line-2);border-radius:3px}
 .pc .pieces{color:var(--ink-2)}
 .pc .pieces b{color:var(--ink)}
@@ -68,8 +74,14 @@ body:has(#net-ov:not(.hidden)) #hdr-info,body:has(#setup-ov:not(.hidden)) #hdr-i
 .pc.burst{border-left-color:var(--ng)!important}
 /* 資源などのチップ: 紙の上でも読めるよう落ち着いた色の札に */
 .chip{border-radius:3px}
-.rd{background:#3e5f75;color:#eef6fb}
-.rk{background:#6e4a7e;color:#f7ecfb}
+/* 資源の札: 濃い地に白文字で、どの資源も同じ読みやすさにする */
+.rw{background:#2f6a28;color:#fff}
+.rb{background:#9a3f26;color:#fff}
+.rs{background:#557f28;color:#fff}
+.rq{background:#96700a;color:#fff}
+.ro{background:#55587a;color:#fff}
+.rd{background:#3e5f75;color:#fff}
+.rk{background:#6e4a7e;color:#fff}
 /* モーダル */
 .ov{background:rgba(30,18,8,.55);backdrop-filter:none}
 .modal{background:var(--paper);border:1px solid var(--line-2);border-radius:4px;box-shadow:0 6px 24px rgba(0,0,0,.45)}
