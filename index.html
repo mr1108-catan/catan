@@ -3011,12 +3011,12 @@ function showTradeReactionResults(){
     const yes=pendingTrade.reactions[op.id]==='yes';
     if(yes)anyYes=true;
     const row=document.createElement('div');
-    row.style.cssText=`display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;margin-bottom:5px;`+
-      `background:${yes?'rgba(0,180,80,.13)':'rgba(160,0,0,.1)'};border:1px solid ${yes?'#20a060':'#802020'}`;
+    // 提案モーダルの行と同じ並び（名前のすぐ右に勝利点、右端に⭕❌）にそろえる
+    row.style.cssText=`display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;`+
+      `background:${yes?'rgba(0,180,80,.1)':'rgba(160,0,0,.08)'};border:1px solid ${yes?'#20a060':'#802020'}`;
     const vp2=shownVP(op);
-    row.innerHTML=`<span style="color:${op.color};flex:1">${op.isAI?'🤖':'👤'} ${op.name}</span>`+
-      `<span style="color:#f4d060;font-size:11px;margin-right:6px">⭐${vp2}</span>`+
-      `<span style="font-size:22px;font-weight:900;line-height:1">${yes?'⭕':'❌'}</span>`;
+    row.innerHTML=`<span style="color:${op.color};flex:1;font-weight:700">${op.isAI?'🤖':'👤'} ${op.name} <span style="color:#f4d060;font-size:11px;font-weight:400">⭐${vp2}</span></span>`+
+      `<span style="font-size:20px">${yes?'⭕':'❌'}</span>`;
     reactDiv.appendChild(row);
     if(yes&&!pendingTrade.wasAIProposed){
       // Only the human PROPOSER sees and can press "trade with X" buttons.
@@ -5142,12 +5142,12 @@ function netRenderResult(trade,secs){
     const yes=trade.reactions[op.id]==='yes';
     if(yes)anyYes=true;
     const row=document.createElement('div');
-    row.style.cssText=`display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;margin-bottom:5px;`+
-      `background:${yes?'rgba(0,180,80,.13)':'rgba(160,0,0,.1)'};border:1px solid ${yes?'#20a060':'#802020'}`;
+    // 提案モーダルの行と同じ並び（名前のすぐ右に勝利点、右端に⭕❌）にそろえる
+    row.style.cssText=`display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;`+
+      `background:${yes?'rgba(0,180,80,.1)':'rgba(160,0,0,.08)'};border:1px solid ${yes?'#20a060':'#802020'}`;
     const vp2=shownVP(op);
-    row.innerHTML=`<span style="color:${op.color};flex:1">${op.isAI?'🤖':'👤'} ${op.name}</span>`+
-      `<span style="color:#f4d060;font-size:11px;margin-right:6px">⭐${vp2}</span>`+
-      `<span style="font-size:22px;font-weight:900;line-height:1">${yes?'⭕':'❌'}</span>`;
+    row.innerHTML=`<span style="color:${op.color};flex:1;font-weight:700">${op.isAI?'🤖':'👤'} ${op.name} <span style="color:#f4d060;font-size:11px;font-weight:400">⭐${vp2}</span></span>`+
+      `<span style="font-size:20px">${yes?'⭕':'❌'}</span>`;
     reactDiv.appendChild(row);
     if(yes&&!trade.wasAIProposed&&iAmProposer){
       const btn=document.createElement('button');
